@@ -6,3 +6,5 @@ osmium==4.3.0
 shapely==2.1.2
 geopandas==1.1.2
 pyrosm==0.6.2
+folium==0.20.0
+mapclassify==2.8.1
