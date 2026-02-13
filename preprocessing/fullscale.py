@@ -42,7 +42,9 @@ WALKING_SPEED_KMPH = 4
 MAX_WALKING_TIME_MIN = 15
 max_distance = WALKING_SPEED_KMPH * 1000 / 60 * MAX_WALKING_TIME_MIN  # meters
 
+print("precumputing begin")
 network.precompute(max_distance)
+print("precumputing end")
 
 categories = {
     "education": {"amenity": ["school", "university"]},
@@ -52,6 +54,7 @@ categories = {
     "culture": {"amenity": ["theatre", "museum"]},
 }
 
+print("loop begin")
 poi_distances = {}
 
 for point, name in zip(points, names):
@@ -74,12 +77,15 @@ for point, name in zip(points, names):
     ).iloc[:, 0]
     
     poi_distances[name] = d
-    
+
+print("loop end")
 poi_distances = pd.DataFrame(poi_distances)
 
+print("pandas begin")
 # Binary reachability per category (1 if reachable within 15 min, else 0)
 poi_distances = poi_distances.reindex(columns=categories.keys())
 reachable = (poi_distances <= max_distance).fillna(False).astype(int)
 access_score = reachable.sum(axis=1)
+print("pandas end")
 
 print(access_score.describe())
