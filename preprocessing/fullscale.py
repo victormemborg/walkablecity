@@ -33,6 +33,7 @@ gdf = gpd.GeoDataFrame(
     geometry=points,
     crs="EPSG:4326"
 )
+print(gdf.head())
 
 #################### Calculate ####################
 
@@ -42,8 +43,6 @@ WALKING_SPEED_KMPH = 4
 MAX_WALKING_TIME_MIN = 15
 max_distance = WALKING_SPEED_KMPH * 1000 / 60 * MAX_WALKING_TIME_MIN  # meters
 
-print("precumputing begin")
-network.precompute(max_distance)
 print("precumputing end")
 
 categories = {
@@ -57,26 +56,31 @@ categories = {
 print("loop begin")
 poi_distances = {}
 
-for point, name in zip(points, names):
-    if name not in categories.items():
-        continue
+for category_name, tag_filter in categories.items():
 
+    # filter gdf for that category
+    if "amenity" not in tag_filter:
+        continue
+    
+    subset = gdf[gdf["amenity"].isin(tag_filter["amenity"])]    
+
+    # set ALL POIs at once
     network.set_pois(
-        name,
+        category_name,
         max_distance,
         1,
-        point.x,
-        point.y,
+        subset.geometry.x,
+        subset.geometry.y
     )
-    
+
+    # compute distances ONCE
     d = network.nearest_pois(
         max_distance,
-        name,
-        num_pois=1,
-        max_distance=max_distance + 1,
+        category_name,
+        num_pois=1
     ).iloc[:, 0]
-    
-    poi_distances[name] = d
+
+    poi_distances[category_name] = d
 
 print("loop end")
 poi_distances = pd.DataFrame(poi_distances)
@@ -88,4 +92,5 @@ reachable = (poi_distances <= max_distance).fillna(False).astype(int)
 access_score = reachable.sum(axis=1)
 print("pandas end")
 
-print(access_score.describe())
+result = pd.concat([reachable, access_score.rename("access_score")], axis=1)
+print(result.head())
