@@ -8,20 +8,20 @@ import pickle
 
 CATEGORY_MAP = {
     # Education
-    "school": "education",
-    "university": "education",
+    #"school": "education",
+    #"university": "education",
     # Health
-    "hospital": "health",
-    "clinic": "health",
+    #"hospital": "health",
+    #"clinic": "health",
     # Grocery
     "supermarket": "grocery",
     "convenience": "grocery",
     # Leisure
-    "park": "leisure",
-    "playground": "leisure",
+    #"park": "leisure",
+    #"playground": "leisure",
     # Culture
-    "theatre": "culture",
-    "museum": "culture",
+    #"theatre": "culture",
+    #"museum": "culture",
 }
 
 
@@ -64,7 +64,7 @@ network = pdna.Network.from_hdf5("denmark.backup")
 
 WALKING_SPEED_KMPH = 4
 MAX_WALKING_TIME_MIN = 15
-max_dist = WALKING_SPEED_KMPH * 1000 / 60 * MAX_WALKING_TIME_MIN  # meters
+max_dist = 1000
 
 nearest_categories: dict[str, pd.DataFrame] = {}
 
@@ -89,5 +89,5 @@ for category, points in categorized_points.items():
     nearest_categories[category] = nearest
 
 print("Writing results to disk")
-with open("nearest_categories.pkl", "wb") as f:
+with open("nearest_categories2.pkl", "wb") as f:
     pickle.dump(nearest_categories, f)
