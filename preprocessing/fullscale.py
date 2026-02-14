@@ -1,7 +1,7 @@
 import pandana as pdna
 import osmium
 from osmium import filter, osm, geom
-from shapely import wkt
+from shapely import wkt, Point
 import geopandas as gpd
 import pandas as pd
 
@@ -15,25 +15,24 @@ fp = osmium.FileProcessor(data).with_areas() \
 
 fab = geom.WKTFactory()
 
-def to_points(o):
-    if o.is_node():
-        point = wkt.loads(fab.create_point(o))
-    elif o.is_area():
-        poly = wkt.loads(fab.create_multipolygon(o))
-        point = poly.centroid
-    else:
-        raise AssertionError(f"Unreachable: {o}")
+def to_points(fp):
+    points: list[Point] = []
+    amenities: list[str] = []
 
-    return point, o.tags.get("amenity")
+    for o in fp:
+        if o.is_node():
+            shape = wkt.loads(fab.create_point(o))
+        elif o.is_area():
+            shape = wkt.loads(fab.create_multipolygon(o))
+        else:
+            raise AssertionError(f"Unreachable: {o}")
 
-points, names = map(list, zip(*[to_points(obj) for obj in fp]))
+        points.append(shape.centroid)
+        amenities.append(o.tags.get("amenity"))
+        
+    return points, amenities
 
-gdf = gpd.GeoDataFrame(
-    {"amenity": names},
-    geometry=points,
-    crs="EPSG:4326"
-)
-print(gdf.head())
+points, amenities = to_points(fp)
 
 #################### Calculate ####################
 
@@ -43,44 +42,50 @@ WALKING_SPEED_KMPH = 4
 MAX_WALKING_TIME_MIN = 15
 max_distance = WALKING_SPEED_KMPH * 1000 / 60 * MAX_WALKING_TIME_MIN  # meters
 
-print("precumputing end")
-
-categories = {
-    "education": {"amenity": ["school", "university"]},
-    "health": {"amenity": ["hospital", "clinic"]},
-    "grocery": {"shop": ["supermarket", "convenience"]},
-    "leisure": {"leisure": ["park", "playground"]},
-    "culture": {"amenity": ["theatre", "museum"]},
+category_map = {
+    # Education
+    "school": "education",
+    "university": "education",
+    # Health
+    "hospital": "health",
+    "clinic": "health",
+    # Grocery
+    "supermarket": "grocery",
+    "convenience": "grocery",
+    # Leisure
+    "park": "leisure",
+    "playground": "leisure",
+    # Culture
+    "theatre": "culture",
+    "museum": "culture",
 }
 
 print("loop begin")
 poi_distances = {}
+categorised_points
 
-for category_name, tag_filter in categories.items():
-
-    # filter gdf for that category
-    if "amenity" not in tag_filter:
+for point, amenity in zip(points, amenities):
+    if amenity not in category_map.keys():
         continue
-    
-    subset = gdf[gdf["amenity"].isin(tag_filter["amenity"])]    
 
-    # set ALL POIs at once
     network.set_pois(
-        category_name,
+        amenity,
         max_distance,
         1,
-        subset.geometry.x,
-        subset.geometry.y
+        point.x,
+        point.y,
     )
 
-    # compute distances ONCE
+    network.nodes_in_range
+    
     d = network.nearest_pois(
         max_distance,
-        category_name,
-        num_pois=1
+        amenity,
+        num_pois=1,
+        max_distance=max_distance + 1,
     ).iloc[:, 0]
-
-    poi_distances[category_name] = d
+    
+    poi_distances[amenity] = d
 
 print("loop end")
 poi_distances = pd.DataFrame(poi_distances)
@@ -92,5 +97,4 @@ reachable = (poi_distances <= max_distance).fillna(False).astype(int)
 access_score = reachable.sum(axis=1)
 print("pandas end")
 
-result = pd.concat([reachable, access_score.rename("access_score")], axis=1)
-print(result.head())
+print(access_score.describe())
