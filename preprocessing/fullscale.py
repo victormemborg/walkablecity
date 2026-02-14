@@ -24,6 +24,7 @@ CATEGORY_MAP = {
     "museum": "culture",
 }
 
+
 #################### Collect all amenities ####################
 
 data= "../../denmark-260208.osm.pbf"
@@ -55,6 +56,7 @@ def categorize(fp):
     return categorized_points
 
 categorized_points = categorize(fp)
+
 
 #################### Calculate ####################
 
@@ -89,14 +91,3 @@ for category, points in categorized_points.items():
 print("Writing results to disk")
 with open("nearest_categories.pkl", "wb") as f:
     pickle.dump(nearest_categories, f)
-
-"""
-print("pandas begin")
-# Binary reachability per category (1 if reachable within 15 min, else 0)
-poi_distances = poi_distances.reindex(columns=categories.keys())
-reachable = (poi_distances <= max_distance).fillna(False).astype(int)
-access_score = reachable.sum(axis=1)
-print("pandas end")
-
-print(access_score.describe())
-"""
