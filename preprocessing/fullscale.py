@@ -2,9 +2,9 @@ import pandana as pdna
 import osmium
 from osmium import filter, osm, geom
 from shapely import wkt, Point
-import geopandas as gpd
 import pandas as pd
 from collections import defaultdict
+import pickle
 
 CATEGORY_MAP = {
     # Education
@@ -86,8 +86,11 @@ for category, points in categorized_points.items():
     
     nearest_categories[category] = nearest
 
+print("Writing results to disk")
+with open("nearest_categories.pkl", "wb") as f:
+    pickle.dump(nearest_categories, f)
 
-
+"""
 print("pandas begin")
 # Binary reachability per category (1 if reachable within 15 min, else 0)
 poi_distances = poi_distances.reindex(columns=categories.keys())
@@ -96,3 +99,4 @@ access_score = reachable.sum(axis=1)
 print("pandas end")
 
 print(access_score.describe())
+"""
