@@ -39,6 +39,7 @@ def categorize(fp):
     for o in fp:
         amenity = o.tags.get("amenity")
         category = CATEGORY_MAP.get(amenity)
+
         if category is None:
             continue
 
@@ -63,10 +64,11 @@ WALKING_SPEED_KMPH = 4
 MAX_WALKING_TIME_MIN = 15
 max_dist = WALKING_SPEED_KMPH * 1000 / 60 * MAX_WALKING_TIME_MIN  # meters
 
-print("loop begin")
-poi_distances = {}
+nearest_categories: dict[str, pd.DataFrame] = {}
 
 for category, points in categorized_points.items():
+    print(f"Computing category: {category}")
+
     network.set_pois(
         category=category,
         maxdist=max_dist,
@@ -75,17 +77,16 @@ for category, points in categorized_points.items():
         y_col=[p.y for p in points],
     )
     
-    d = network.nearest_pois(
+    nearest = network.nearest_pois(
         distance=max_dist,
         category=category,
         num_pois=1,
         max_distance=max_dist + 1,
-    ).iloc[:, 0]
+    )
     
-    poi_distances[amenity] = d
+    nearest_categories[category] = nearest
 
-print("loop end")
-poi_distances = pd.DataFrame(poi_distances)
+
 
 print("pandas begin")
 # Binary reachability per category (1 if reachable within 15 min, else 0)
