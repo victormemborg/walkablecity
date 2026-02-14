@@ -2,4 +2,10 @@ pandana==0.7
 numpy==1.26.4
 osmnet==0.1.7
 matplotlib==3.10.8
+osmium==4.3.0
+shapely==2.1.2
+geopandas==1.1.2
+pyrosm==0.6.2
+folium==0.20.0
+mapclassify==2.8.1
 osmnx==2.0.7
