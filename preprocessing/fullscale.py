@@ -30,33 +30,37 @@ CATEGORY_MAP = {
 data= "../../denmark-260208.osm.pbf"
 fp = osmium.FileProcessor(data).with_areas() \
     .with_filter(filter.EntityFilter(osm.NODE | osm.AREA))\
-    .with_filter(filter.KeyFilter("amenity")
-)
+    .with_filter(filter.KeyFilter("amenity", "shop", "leisure", "building"))
 
 def categorize(fp):
     fab = geom.WKTFactory()
     categorized_points: defaultdict[str, list[Point]] = defaultdict(list)
 
     for o in fp:
-        amenity = o.tags.get("amenity")
-        category = CATEGORY_MAP.get(amenity)
+        seen_categories = set()
 
-        if category is None:
-            continue
+        for tag in o.tags:
+            category = CATEGORY_MAP.get(tag.v)
 
-        if o.is_node():
-            shape = wkt.loads(fab.create_point(o))
-        elif o.is_area():
-            shape = wkt.loads(fab.create_multipolygon(o))
-        else:
-            raise AssertionError(f"Unreachable: {o}")
+            if category is None or category in seen_categories:
+                continue
+            seen_categories.add(category)
 
-        categorized_points[category].append(shape.centroid)
+            if o.is_node():
+                shape = wkt.loads(fab.create_point(o))
+            elif o.is_area():
+                shape = wkt.loads(fab.create_multipolygon(o))
+            else:
+                raise AssertionError(f"Unreachable: {o}")
+
+            categorized_points[category].append(shape.centroid)
         
     return categorized_points
 
 categorized_points = categorize(fp)
 
+#for cat, ps in categorized_points.items():
+#    print(f"{cat}: {len(ps)}")
 
 #################### Calculate ####################
 
