@@ -59,17 +59,15 @@ def categorize(fp):
 
 categorized_points = categorize(fp)
 
-#for cat, ps in categorized_points.items():
-#    print(f"{cat}: {len(ps)}")
+print("Found the following number of categories:")
+for cat, ps in categorized_points.items():
+    print(f"{cat}: {len(ps)}")
 
 #################### Calculate ####################
 
 network = pdna.Network.from_hdf5("denmark.backup")
 
-WALKING_SPEED_KMPH = 4
-MAX_WALKING_TIME_MIN = 15
-max_dist = 1000
-
+max_dist = 1600 #meters
 nearest_categories: dict[str, pd.DataFrame] = {}
 
 for category, points in categorized_points.items():
