@@ -87,7 +87,8 @@ for category, points in categorized_points.items():
         num_pois=1,
         max_distance=max_dist + 1,
     )
-    
+
+    nearest.columns = ["dist"]
     nearest_categories[category] = nearest
 
 print("Writing results to disk")
