@@ -1,96 +1,96 @@
 import pandana as pdna
 import osmium
 from osmium import filter, osm, geom
-from shapely import wkt
-import geopandas as gpd
+from shapely import wkt, Point
 import pandas as pd
+from collections import defaultdict
+import pickle
+
+CATEGORY_MAP = {
+    # Education
+    "school": "education",
+    "university": "education",
+    # Health
+    "hospital": "health",
+    "clinic": "health",
+    # Grocery
+    "supermarket": "grocery",
+    "convenience": "grocery",
+    # Leisure
+    "park": "leisure",
+    "playground": "leisure",
+    # Culture
+    "theatre": "culture",
+    "museum": "culture",
+}
+
 
 #################### Collect all amenities ####################
 
 data= "../../denmark-260208.osm.pbf"
 fp = osmium.FileProcessor(data).with_areas() \
     .with_filter(filter.EntityFilter(osm.NODE | osm.AREA))\
-    .with_filter(filter.KeyFilter("amenity")
-)
+    .with_filter(filter.KeyFilter("amenity", "shop", "leisure", "building"))
 
-fab = geom.WKTFactory()
+def categorize(fp):
+    fab = geom.WKTFactory()
+    categorized_points: defaultdict[str, list[Point]] = defaultdict(list)
 
-def to_points(o):
-    if o.is_node():
-        point = wkt.loads(fab.create_point(o))
-    elif o.is_area():
-        poly = wkt.loads(fab.create_multipolygon(o))
-        point = poly.centroid
-    else:
-        raise AssertionError(f"Unreachable: {o}")
+    for o in fp:
+        seen_categories = set()
 
-    return point, o.tags.get("amenity")
+        for tag in o.tags:
+            category = CATEGORY_MAP.get(tag.v)
 
-points, names = map(list, zip(*[to_points(obj) for obj in fp]))
+            if category is None or category in seen_categories:
+                continue
+            seen_categories.add(category)
 
-gdf = gpd.GeoDataFrame(
-    {"amenity": names},
-    geometry=points,
-    crs="EPSG:4326"
-)
-print(gdf.head())
+            if o.is_node():
+                shape = wkt.loads(fab.create_point(o))
+            elif o.is_area():
+                shape = wkt.loads(fab.create_multipolygon(o))
+            else:
+                raise AssertionError(f"Unreachable: {o}")
+
+            categorized_points[category].append(shape.centroid)
+        
+    return categorized_points
+
+categorized_points = categorize(fp)
+
+print("Found the following number of categories:")
+for cat, ps in categorized_points.items():
+    print(f"{cat}: {len(ps)}")
 
 #################### Calculate ####################
 
 network = pdna.Network.from_hdf5("denmark.backup")
 
-WALKING_SPEED_KMPH = 4
-MAX_WALKING_TIME_MIN = 15
-max_distance = WALKING_SPEED_KMPH * 1000 / 60 * MAX_WALKING_TIME_MIN  # meters
+max_dist = 1600 #meters
+nearest_categories: dict[str, pd.DataFrame] = {}
 
-print("precumputing end")
+for category, points in categorized_points.items():
+    print(f"Computing category: {category}")
 
-categories = {
-    "education": {"amenity": ["school", "university"]},
-    "health": {"amenity": ["hospital", "clinic"]},
-    "grocery": {"shop": ["supermarket", "convenience"]},
-    "leisure": {"leisure": ["park", "playground"]},
-    "culture": {"amenity": ["theatre", "museum"]},
-}
-
-print("loop begin")
-poi_distances = {}
-
-for category_name, tag_filter in categories.items():
-
-    # filter gdf for that category
-    if "amenity" not in tag_filter:
-        continue
-    
-    subset = gdf[gdf["amenity"].isin(tag_filter["amenity"])]    
-
-    # set ALL POIs at once
     network.set_pois(
-        category_name,
-        max_distance,
-        1,
-        subset.geometry.x,
-        subset.geometry.y
+        category=category,
+        maxdist=max_dist,
+        maxitems=1,
+        x_col=[p.x for p in points],
+        y_col=[p.y for p in points],
+    )
+    
+    nearest = network.nearest_pois(
+        distance=max_dist,
+        category=category,
+        num_pois=1,
+        max_distance=max_dist + 1,
     )
 
-    # compute distances ONCE
-    d = network.nearest_pois(
-        max_distance,
-        category_name,
-        num_pois=1
-    ).iloc[:, 0]
+    nearest.columns = ["dist"]
+    nearest_categories[category] = nearest
 
-    poi_distances[category_name] = d
-
-print("loop end")
-poi_distances = pd.DataFrame(poi_distances)
-
-print("pandas begin")
-# Binary reachability per category (1 if reachable within 15 min, else 0)
-poi_distances = poi_distances.reindex(columns=categories.keys())
-reachable = (poi_distances <= max_distance).fillna(False).astype(int)
-access_score = reachable.sum(axis=1)
-print("pandas end")
-
-result = pd.concat([reachable, access_score.rename("access_score")], axis=1)
-print(result.head())
+print("Writing results to disk")
+with open("nearest_categories.pkl", "wb") as f:
+    pickle.dump(nearest_categories, f)

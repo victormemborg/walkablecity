@@ -1,7 +1,7 @@
 # https://docs.osmcode.org/pyosmium/latest/user_manual/04-Working-with-Filters/
 import osmium
 from osmium import filter, osm
-import math
+import numpy as np
 import pandas as pd
 import pandana as pdna
 
@@ -11,10 +11,21 @@ fp = osmium.FileProcessor(data).with_locations() \
     .with_filter(filter.KeyFilter("highway")
 )
 
-def pythagoras(node1, node2):
-    a = node1.lon - node2.lon
-    b = node1.lat - node2.lat
-    return math.hypot(a, b)
+def haversine_np(n1, n2):
+    R = 6371000  # Earth radius in meters
+
+    lat1 = np.radians(n1.lat)
+    lon1 = np.radians(n1.lon)
+    lat2 = np.radians(n2.lat)
+    lon2 = np.radians(n2.lon)
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+
+    return R * c
 
 node_dict = {}  # node_id -> node
 edges_list = []  # tuples of (from_id, to_id, dist)
@@ -31,7 +42,7 @@ for way in fp:
     
     # Build edges using node IDs
     for n1, n2 in zip(valid_nodes[:-1], valid_nodes[1:]):
-        dist = pythagoras(n1, n2)
+        dist = haversine_np(n1, n2)
         edges_list.append((n1.ref, n2.ref, dist))
 
 node_id_to_index = {node_id: i for i, node_id in enumerate(node_dict.keys())}
@@ -62,4 +73,4 @@ network = pdna.Network(
     edge_weights
 )
 
-#network.save_hdf5("denmark.backup")
+network.save_hdf5("denmark.backup")
