@@ -12,5 +12,5 @@ osmnx==2.0.7
 geopy==2.4.1
 pygeohash==3.2.2
 sqlalchemy==2.0.47
-psycopg2==2.9.11
+#psycopg2==2.9.11
 GeoAlchemy2==0.18.3
