@@ -27,7 +27,7 @@ CATEGORY_MAP = {
 
 #################### Collect all amenities ####################
 
-data= "../../denmark-260208.osm.pbf"
+data = "data/denmark.osm.pbf"
 fp = osmium.FileProcessor(data).with_areas() \
     .with_filter(filter.EntityFilter(osm.NODE | osm.AREA))\
     .with_filter(filter.KeyFilter("amenity", "shop", "leisure", "building"))
@@ -65,7 +65,7 @@ for cat, ps in categorized_points.items():
 
 #################### Calculate ####################
 
-network = pdna.Network.from_hdf5("denmark.backup")
+network = pdna.Network.from_hdf5("data/intermediate/denmark.backup")
 
 max_dist = 1600 #meters
 nearest_categories: dict[str, pd.DataFrame] = {}
@@ -92,5 +92,5 @@ for category, points in categorized_points.items():
     nearest_categories[category] = nearest
 
 print("Writing results to disk")
-with open("nearest_categories.pkl", "wb") as f:
+with open("data/intermediate/nearest_categories.pkl", "wb") as f:
     pickle.dump(nearest_categories, f)

@@ -216,6 +216,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-*.backup
-*.pkl
+data/
+.vscode/
+logs/
 

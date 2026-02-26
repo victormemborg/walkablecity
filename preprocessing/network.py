@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pandana as pdna
 
-data= "../../denmark-260208.osm.pbf"
+data= "data/denmark.osm.pbf"
 fp = osmium.FileProcessor(data).with_locations() \
     .with_filter(filter.EntityFilter(osm.WAY)) \
     .with_filter(filter.KeyFilter("highway")
@@ -73,4 +73,4 @@ network = pdna.Network(
     edge_weights
 )
 
-network.save_hdf5("denmark.backup")
+network.save_hdf5("data/intermediate/denmark.backup")
