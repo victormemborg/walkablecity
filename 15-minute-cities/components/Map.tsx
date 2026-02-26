@@ -8,6 +8,7 @@ import hexData from "@/accessibility.json";
 import { MapContainer, TileLayer } from "react-leaflet";
 import Scatter from "./Scatter";
 import Heatmap from "./Heatmap";
+import GeohashCells from "./GeohashCell";
 
 export default function Map() {
 
@@ -22,7 +23,7 @@ export default function Map() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Heatmap data={hexData} />
+        <GeohashCells data={hexData} />
       </MapContainer>
   );
 }
