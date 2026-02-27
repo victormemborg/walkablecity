@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -7,6 +8,11 @@ from db import get_db
 from models import BoundingBox
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"]
+)
 
 @app.get("/api/health")
 def health(db: Session = Depends(get_db)):
@@ -19,7 +25,7 @@ def get_edges(
     db: Session = Depends(get_db),
 ):
     sql = text("""
-        SELECT *
+        SELECT ST_AsGeoJSON(linestring), score_from, score_to
         FROM edges
         WHERE linestring && ST_MakeEnvelope(
             :minlon, :minlat,
@@ -29,7 +35,7 @@ def get_edges(
     """)
     
     rows = db.execute(sql, bbox.model_dump()).mappings().all()
-    return {"count": len(rows), "edges": rows}
+    return {"edges": rows}
 
 @app.get("/api/grid")
 def get_grid(
@@ -37,7 +43,7 @@ def get_grid(
     db: Session = Depends(get_db),
 ):
     sql = text("""
-        SELECT *
+        SELECT ST_AsGeoJSON(rectangle), score
         FROM grid
         WHERE rectangle && ST_MakeEnvelope(
             :minlon, :minlat,
@@ -47,4 +53,4 @@ def get_grid(
     """)
     
     rows = db.execute(sql, bbox.model_dump()).mappings().all()
-    return {"count": len(rows), "grid": rows}
+    return {"grid": rows}
