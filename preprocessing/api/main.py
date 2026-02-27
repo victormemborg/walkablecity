@@ -1,9 +1,10 @@
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from db import get_db
+from models import BoundingBox
 
 app = FastAPI()
 
@@ -14,52 +15,36 @@ def health(db: Session = Depends(get_db)):
 
 @app.get("/api/edges")
 def get_edges(
-    minLon: float = Query(...),
-    minLat: float = Query(...),
-    maxLon: float = Query(...),
-    maxLat: float = Query(...),
+    bbox: BoundingBox = Depends(),
     db: Session = Depends(get_db),
 ):
     sql = text("""
         SELECT *
         FROM edges
         WHERE linestring && ST_MakeEnvelope(
-            :minLon, :minLat,
-            :maxLon, :maxLat,
+            :minlon, :minlat,
+            :maxlon, :maxlat,
             4326
         )
     """)
     
-    rows = db.execute(sql, {
-        "minLon": minLon,
-        "minLat": minLat,
-        "maxLon": maxLon,
-        "maxLat": maxLat,
-    }).mappings().all()
+    rows = db.execute(sql, bbox.model_dump()).mappings().all()
     return {"count": len(rows), "edges": rows}
 
 @app.get("/api/grid")
 def get_grid(
-    minLon: float = Query(...),
-    minLat: float = Query(...),
-    maxLon: float = Query(...),
-    maxLat: float = Query(...),
+    bbox: BoundingBox = Depends(),
     db: Session = Depends(get_db),
 ):
     sql = text("""
         SELECT *
         FROM grid
         WHERE rectangle && ST_MakeEnvelope(
-            :minLon, :minLat,
-            :maxLon, :maxLat,
+            :minlon, :minlat,
+            :maxlon, :maxlat,
             4326
         )
     """)
     
-    rows = db.execute(sql, {
-        "minLon": minLon,
-        "minLat": minLat,
-        "maxLon": maxLon,
-        "maxLat": maxLat,
-    }).mappings().all()
+    rows = db.execute(sql, bbox.model_dump()).mappings().all()
     return {"count": len(rows), "grid": rows}
