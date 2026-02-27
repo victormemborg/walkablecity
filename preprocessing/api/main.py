@@ -20,10 +20,7 @@ def health(db: Session = Depends(get_db)):
     return {"status": "ok"}
 
 @app.get("/api/edges")
-def get_edges(
-    bbox: BoundingBox = Depends(),
-    db: Session = Depends(get_db),
-):
+def get_edges(bbox: BoundingBox = Depends(), db: Session = Depends(get_db)):
     sql = text("""
         SELECT ST_AsGeoJSON(linestring), score_from, score_to
         FROM edges
@@ -38,11 +35,9 @@ def get_edges(
     return {"edges": rows}
 
 @app.get("/api/grid")
-def get_grid(
-    bbox: BoundingBox = Depends(),
-    db: Session = Depends(get_db),
-):
-    sql = text("""
+def get_grid(bbox: BoundingBox = Depends(), db: Session = Depends(get_db)):
+    sql = text(
+        """
         SELECT ST_AsGeoJSON(rectangle), score
         FROM grid
         WHERE rectangle && ST_MakeEnvelope(
