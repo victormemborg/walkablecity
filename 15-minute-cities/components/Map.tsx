@@ -3,7 +3,6 @@
 // IMPORTANT: the order matters!
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
-import hexData from "@/accessibility.json";
 
 import { MapContainer, TileLayer } from "react-leaflet";
 import GeohashCells from "./GeohashCell";
@@ -23,7 +22,6 @@ export default function Map() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <GeohashCells data={hexData} />
         <Viewport />
       </MapContainer>
   );
