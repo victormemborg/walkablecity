@@ -1,17 +1,17 @@
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 
-export default function BoundingBox() {
+export default function Viewport() {
     const map = useMap();
 
     useEffect(() => {
         const updateBounds = () => {
             const bounds = map.getBounds();
             const bbox = {
-                minLat: bounds.getWest(),
-                minLng: bounds.getSouth(),
-                maxLat: bounds.getEast(),
-                maxLng: bounds.getNorth(),
+            minLat: bounds.getSouth(),
+            minLng: bounds.getWest(),
+            maxLat: bounds.getNorth(),
+            maxLng: bounds.getEast(),
             };
             console.log("Current bbox", bbox);
         };

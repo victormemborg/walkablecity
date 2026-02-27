@@ -6,10 +6,8 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import hexData from "@/accessibility.json";
 
 import { MapContainer, TileLayer } from "react-leaflet";
-import Scatter from "./Scatter";
-import Heatmap from "./Heatmap";
 import GeohashCells from "./GeohashCell";
-import BoundingBox from "./BoundingBox";
+import Viewport from "./Viewport";
 
 export default function Map() {
 
@@ -25,7 +23,7 @@ export default function Map() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <GeohashCells data={hexData} />
-        <BoundingBox />
+        <Viewport />
       </MapContainer>
   );
 }
