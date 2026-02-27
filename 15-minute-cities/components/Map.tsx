@@ -5,7 +5,6 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 
 import { MapContainer, TileLayer } from "react-leaflet";
-import GeohashCells from "./GeohashCell";
 import Viewport from "./Viewport";
 
 export default function Map() {

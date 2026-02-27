@@ -5,7 +5,7 @@ import { useMap, GeoJSON } from "react-leaflet";
 import type { FeatureCollection } from "geojson"
 
 async function fetchData(bounds: LatLngBounds): Promise<FeatureCollection> {
-    const API_URL = "http://127.0.0.1:8000/api";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const params = new URLSearchParams({
         minlat: bounds.getSouth().toString(),
         minlon: bounds.getWest().toString(),
@@ -51,7 +51,6 @@ export default function Viewport() {
         };
     }, [map]);
 
-    console.log(data);
     if (!data) return null;
 
     return (
