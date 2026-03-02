@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useMap, GeoJSON } from "react-leaflet";
 import type { FeatureCollection } from "geojson"
 
-async function fetchData(bounds: LatLngBounds): Promise<FeatureCollection> {
+async function fetchData(bounds: LatLngBounds, zoom: number): Promise<FeatureCollection> {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const params = new URLSearchParams({
         minlat: bounds.getSouth().toString(),
         minlon: bounds.getWest().toString(),
         maxlat: bounds.getNorth().toString(),
         maxlon: bounds.getEast().toString(),
+        zoom: zoom.toString(),
     });
 
     const res = await fetch(`${API_URL}/grid?${params.toString()}`);
@@ -34,7 +35,7 @@ export default function Viewport() {
 
             timeoutRef.current = setTimeout(async () => {
                 const bounds = map.getBounds();
-                const data = await fetchData(bounds);
+                const data = await fetchData(bounds, map.getZoom());
                 setData(data)
             }, DEBOUNCE_DELAY);
         };
