@@ -39,13 +39,16 @@ def get_grid(bbox: BoundingBox = Depends(), db: Session = Depends(get_db)):
     sql = text(
         """
         SELECT ST_AsGeoJSON(rectangle), score
-        FROM grid
-        WHERE rectangle && ST_MakeEnvelope(
+        FROM grid_multilevel
+        WHERE level = :level
+          AND rectangle && ST_MakeEnvelope(
             :minlon, :minlat,
             :maxlon, :maxlat,
             4326
         )
     """)
-    
-    rows = db.execute(sql, bbox.model_dump()).mappings().all()
+
+    params = bbox.model_dump()
+    params["level"] = bbox.level
+    rows = db.execute(sql, params).mappings().all()
     return {"grid": rows}
