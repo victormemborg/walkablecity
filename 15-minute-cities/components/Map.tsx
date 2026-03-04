@@ -23,8 +23,8 @@ export default function Map() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <VectorTileLayer 
-          url={"http://localhost:7800/public.edges/{z}/{x}/{y}.pbf"}
-          layerName={"public.edges"}
+          url={"http://localhost:7800/public.grid_precision_6/{z}/{x}/{y}.pbf"}
+          layerName={"public.grid_precision_6"}
         />
       </MapContainer>
   );

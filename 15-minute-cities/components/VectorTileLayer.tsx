@@ -3,22 +3,43 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.vectorgrid";
 
+const GRADIENT: Record<number, string> = {
+  0.0:  "#1d0024",
+  0.08: "#440154",
+  0.20: "#3b528b",
+  0.38: "#21918c",
+  0.65: "#5ec962",
+  1.0:  "#fde725",
+};
+
+const stops = Object.keys(GRADIENT).map(Number);
+
+function getNearestGradientColor(value: number): string {
+  const nearest = stops.reduce((prev, curr) =>
+    Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+  );
+  return GRADIENT[nearest];
+}
+
 export default function VectorTileLayer({ url, layerName}: {url: string, layerName: string}) {
     const map = useMap();
 
     useEffect(() => {
         const vectorTileOptions = {
-            rendererFactory: L.canvas.tile,
-            interactive: true,
+            rendererFactory: L.canvas.tile, // L.canvas.tile | L.svg.tile
+            interactive: false,
             vectorTileLayerStyles: {
-                // layerName must match pg_tileserv table/layer name (according to some random source)
-                [layerName]: {
-                    weight: 1,
-                    color: "#3388ff",
-                    opacity: 1,
-                    fill: true,
-                    fillColor: "#3388ff",
-                    fillOpacity: 0.3,
+                [layerName]: (properties: Record<string, string>) => {
+                    const score = Number(properties.score)
+                    const color = getNearestGradientColor(score / 5)
+                    return {
+                        weight: 1,
+                        color: color,
+                        opacity: 1,
+                        fill: true,
+                        fillColor: color,
+                        fillOpacity: 0.3,
+                    };
                 },
             },
         };
