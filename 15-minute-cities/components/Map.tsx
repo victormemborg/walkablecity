@@ -6,6 +6,7 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 
 import { MapContainer, TileLayer } from "react-leaflet";
 import Viewport from "./Viewport";
+import VectorTileLayer from "./VectorTileLayer";
 
 export default function Map() {
 
@@ -21,7 +22,10 @@ export default function Map() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Viewport />
+        <VectorTileLayer 
+          url={"http://localhost:7800/public.edges/{z}/{x}/{y}.pbf"}
+          layerName={"public.edges"}
+        />
       </MapContainer>
   );
 }

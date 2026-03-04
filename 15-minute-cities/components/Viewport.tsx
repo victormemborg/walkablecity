@@ -2,7 +2,7 @@ import { LatLngBounds } from "leaflet";
 import React from "react";
 import { useEffect, useState } from "react";
 import { useMap, GeoJSON } from "react-leaflet";
-import type { FeatureCollection } from "geojson"
+import type { FeatureCollection, Feature } from "geojson"
 
 async function fetchData(bounds: LatLngBounds, zoom: number): Promise<FeatureCollection> {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -15,9 +15,9 @@ async function fetchData(bounds: LatLngBounds, zoom: number): Promise<FeatureCol
     });
 
     const res = await fetch(`${API_URL}/bbox?${params.toString()}`);
-    const resp: { geometry: { st_asgeojson: string }[]; } = await res.json();
+    const resp: { geojson: Feature }[] = await res.json();
 
-    return {type: "FeatureCollection", features: resp.geometry.map(geom => JSON.parse(geom.st_asgeojson))};
+    return {type: "FeatureCollection", features: resp.map(geom=>geom.geojson)};
 }
 
 export default function Viewport() {
@@ -32,8 +32,6 @@ export default function Viewport() {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
-
-            console.log(map.getZoom());
 
             timeoutRef.current = setTimeout(async () => {
                 const bounds = map.getBounds();

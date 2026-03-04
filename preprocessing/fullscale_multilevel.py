@@ -5,7 +5,7 @@ import pygeohash as pgh
 import pandana as pdna
 import geopandas as gpd
 from shapely.geometry import box
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 # CONSTANTS
@@ -64,6 +64,15 @@ for precision in PRECISION_LEVELS:
     
     table_name = f"grid_precision_{precision}"
     gdf.to_postgis(name=table_name, con=engine, if_exists="replace")
+
+    with engine.begin() as conn:
+        conn.execute(text(f"""
+            ALTER TABLE {table_name}
+            ADD COLUMN geojson jsonb
+            GENERATED ALWAYS AS (
+                ST_AsGeoJSON(geometry, 6)::jsonb
+            ) STORED;       
+        """))
 
     print(f"Created table {table_name} with {len(gdf)} rows for precision {precision}.")
 

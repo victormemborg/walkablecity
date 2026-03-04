@@ -28,10 +28,10 @@ ZOOM_TO_TABLE_MAP: dict[int, str] = {
     8: "grid_precision_4",
     9: "grid_precision_5",
     10: "grid_precision_5",
-    11: "grid_precision_6",
+    11: "grid_precision_5",
     12: "grid_precision_6",
     13: "grid_precision_6",
-    14: "grid_precision_7",
+    14: "grid_precision_6",
     15: "grid_precision_7",
     16: "grid_precision_7",
     17: "grid_precision_7",
@@ -45,25 +45,20 @@ def health(db: Session = Depends(get_db)):
 
 @app.get("/api/bbox")
 def get_grid(bbox: BoundingBox = Depends(), db: Session = Depends(get_db)):
-    start = time.perf_counter()
-
     params = bbox.model_dump()
-    table = ZOOM_TO_TABLE_MAP.get(params["zoom"])
+    table = ZOOM_TO_TABLE_MAP[params["zoom"]]
     sql = text(
         f"""
-        SELECT ST_AsGeoJSON(geometry), score
+        SELECT geojson, score
         FROM {table}
         WHERE geometry && ST_MakeEnvelope(
-            :minlon, :minlat,
-            :maxlon, :maxlat,
-            4326
+            :minlon, :minlat, :maxlon, :maxlat, 4326
         )
         """
     )
 
-    rows = db.execute(sql, params).mappings().all()
-
-    duration = time.perf_counter() - start
-    print(duration)
-    
-    return {"geometry": rows}
+    t0 = time.perf_counter()
+    result = db.execute(sql, params).mappings().all()
+    t1 = time.perf_counter()
+    print(f"test:{t1-t0}")
+    return result
