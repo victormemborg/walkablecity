@@ -14,10 +14,10 @@ async function fetchData(bounds: LatLngBounds, zoom: number): Promise<FeatureCol
         zoom: zoom.toString(),
     });
 
-    const res = await fetch(`${API_URL}/grid?${params.toString()}`);
-    const resp: { grid: { st_asgeojson: string }[]; } = await res.json();
+    const res = await fetch(`${API_URL}/bbox?${params.toString()}`);
+    const resp: { geometry: { st_asgeojson: string }[]; } = await res.json();
 
-    return {type: "FeatureCollection", features: resp.grid.map(rect => JSON.parse(rect.st_asgeojson))};
+    return {type: "FeatureCollection", features: resp.geometry.map(geom => JSON.parse(geom.st_asgeojson))};
 }
 
 export default function Viewport() {
@@ -32,6 +32,8 @@ export default function Viewport() {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
+
+            console.log(map.getZoom());
 
             timeoutRef.current = setTimeout(async () => {
                 const bounds = map.getBounds();
