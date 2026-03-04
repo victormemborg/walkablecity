@@ -14,9 +14,9 @@ class BoundingBox(BaseModel):
             return 3
         elif self.zoom <= 9:
             return 4
-        elif self.zoom <= 12:
+        elif self.zoom <= 11:
             return 5
-        elif self.zoom <= 15:
+        elif self.zoom <= 13:
             return 6
         else:
             return 7

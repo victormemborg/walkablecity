@@ -9,7 +9,10 @@ from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
 # CONSTANTS
-PRECISION_LEVELS = [3, 4, 5, 6, 7]
+#TODO: We need to tune both on the precision levels and the zoom level thresholds. 
+# Precision level 3 is probably too coarse for Denmark, but i'll leave it for now, since starting on precision level 4 with current zoom thresholds
+# results in 50% increased api response times.
+PRECISION_LEVELS = [3, 4, 5, 6, 7] # https://medium.com/@zaenun.faiz/processing-large-geospatial-dataset-using-geohash-spatial-index-6f78079951d3
 MAX_DIST = 1600  # meters
 
 # INPUT
@@ -71,3 +74,5 @@ combined = gpd.GeoDataFrame(combined, geometry="rectangle", crs=4326)
 
 print(f"Writing {len(combined)} total grid rows to PostGIS ...")
 combined.to_postgis(name="grid_multilevel", con=engine, if_exists="replace")
+
+print("DONE: Table constructed in db.")
