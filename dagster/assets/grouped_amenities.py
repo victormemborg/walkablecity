@@ -1,0 +1,81 @@
+import dagster as dg
+import osmium
+import pickle
+
+from pathlib import Path
+from collections import defaultdict
+from osmium import filter, osm, geom
+from shapely import wkt, Point
+from models.models import RawPBF, GroupedAmenities
+
+DATA_DIR = Path("../data")
+DATA_DIR.mkdir(exist_ok=True)
+
+CATEGORY_MAP = {
+    # Education
+    "school": "education",
+    "university": "education",
+    # Health
+    "hospital": "health",
+    "clinic": "health",
+    # Grocery
+    "supermarket": "grocery",
+    "convenience": "grocery",
+    # Leisure
+    "park": "leisure",
+    "playground": "leisure",
+    # Culture
+    "theatre": "culture",
+    "museum": "culture",
+}
+
+def group(file_processor):
+    """Group osm objects in FileProcessor by category. Objects returned as their centroid."""
+    fab = geom.WKTFactory()
+    grouped_points: defaultdict[str, list[Point]] = defaultdict(list)
+
+    for osm_obj in file_processor:
+        seen_categories = set()
+
+        for tag in osm_obj.tags:
+            category = CATEGORY_MAP.get(tag.v)
+
+            if category is None or category in seen_categories:
+                continue
+            seen_categories.add(category)
+
+            if osm_obj.is_node():
+                shape = wkt.loads(fab.create_point(osm_obj))
+            elif osm_obj.is_area():
+                shape = wkt.loads(fab.create_multipolygon(osm_obj))
+            else:
+                raise AssertionError(f"Unreachable: {osm_obj}")
+
+            grouped_points[category].append(shape.centroid)
+        
+    return grouped_points
+
+@dg.asset(kinds={"python"})
+async def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: RawPBF) -> GroupedAmenities:
+    """Group ammenities in the raw PBF data by categories"""
+
+    out_path = DATA_DIR / "grouped-amenities.pkl"
+    if out_path.exists():
+        context.log.info(f"{out_path} already exists. Reusing asset...")
+        return GroupedAmenities(out_path)
+
+    fp = osmium.FileProcessor(denmark_raw).with_areas() \
+        .with_filter(filter.EntityFilter(osm.NODE | osm.AREA))\
+        .with_filter(filter.KeyFilter("amenity", "shop", "leisure", "building"))
+
+    grouped_amenities = group(fp)
+    for g, amenities in grouped_amenities.items():
+        context.log.info(f"Found {len(amenities)} amenities for group {g}")
+
+    with open(out_path, "wb") as f:
+        pickle.dump(grouped_amenities, f)
+
+    return GroupedAmenities(out_path)
+
+
+
