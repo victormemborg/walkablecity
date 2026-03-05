@@ -54,25 +54,13 @@ for precision in PRECISION_LEVELS:
     level_df["hash"] = hashes
 
     grouped = level_df.groupby("hash", as_index=False).agg({"score": "mean"})
-    grouped["rectangle"] = grouped["hash"].apply(box_hash)
+    grouped["geometry"] = grouped["hash"].apply(box_hash)
 
-    gdf = gpd.GeoDataFrame(
-        grouped[["score"]],
-        geometry=grouped["rectangle"],
-        crs=4326,
-    )
+    final = grouped[["geometry", "score"]]
+    gdf = gpd.GeoDataFrame(final, geometry="geometry", crs=4326)
     
     table_name = f"grid_precision_{precision}"
     gdf.to_postgis(name=table_name, con=engine, if_exists="replace")
-
-    with engine.begin() as conn:
-        conn.execute(text(f"""
-            ALTER TABLE {table_name}
-            ADD COLUMN geojson jsonb
-            GENERATED ALWAYS AS (
-                ST_AsGeoJSON(geometry, 6)::jsonb
-            ) STORED;       
-        """))
 
     print(f"Created table {table_name} with {len(gdf)} rows for precision {precision}.")
 
