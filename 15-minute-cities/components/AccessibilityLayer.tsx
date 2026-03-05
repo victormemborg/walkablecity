@@ -7,7 +7,7 @@ function zoomToTable(zoom: number): string {
     if (zoom <= 11) return "public.grid_precision_6";
     if (zoom <= 14) return "public.grid_precision_7";
     if (zoom <= 18) return "public.edges";
-    throw new AssertionError({message: "unhandled zoom level",});
+    throw new AssertionError({message: "unhandled zoom level"});
 };
 
 export default function AccessibilityLayer({baseTileUrl, initialZoom}: {baseTileUrl: string, initialZoom: number}) {
