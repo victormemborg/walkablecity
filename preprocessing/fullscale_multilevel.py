@@ -5,14 +5,14 @@ import pygeohash as pgh
 import pandana as pdna
 import geopandas as gpd
 from shapely.geometry import box
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 # CONSTANTS
 #TODO: We need to tune both on the precision levels and the zoom level thresholds. 
 # Precision level 3 is probably too coarse for Denmark, but i'll leave it for now, since starting on precision level 4 with current zoom thresholds
 # results in 50% increased api response times.
-PRECISION_LEVELS = [3, 4, 5, 6, 7] # https://medium.com/@zaenun.faiz/processing-large-geospatial-dataset-using-geohash-spatial-index-6f78079951d3
+PRECISION_LEVELS = [4, 5, 6, 7] # https://medium.com/@zaenun.faiz/processing-large-geospatial-dataset-using-geohash-spatial-index-6f78079951d3
 MAX_DIST = 1600  # meters
 
 # INPUT
@@ -38,7 +38,9 @@ def box_hash(hash: str):
     min_lat, min_lon, max_lat, max_lon = pgh.get_bounding_box(hash)
     return box(minx=min_lon, miny=min_lat, maxx=max_lon, maxy=max_lat)
 
-all_levels = []
+# POSTGIS OUTPUT
+load_dotenv()
+engine = create_engine(os.environ["DATABASE_URL"])
 
 for precision in PRECISION_LEVELS:
     print(f"Computing geohash precision {precision} / {max(PRECISION_LEVELS)} ...")
@@ -52,27 +54,14 @@ for precision in PRECISION_LEVELS:
     level_df["hash"] = hashes
 
     grouped = level_df.groupby("hash", as_index=False).agg({"score": "mean"})
-    grouped["rectangle"] = grouped["hash"].apply(box_hash)
-    grouped["level"] = precision
+    grouped["geometry"] = grouped["hash"].apply(box_hash)
 
-    gdf = gpd.GeoDataFrame(
-        grouped[["level", "score"]],
-        geometry=grouped["rectangle"],
-        crs=4326,
-    )
-    gdf = gdf.rename_geometry("rectangle")
+    final = grouped[["geometry", "score"]]
+    gdf = gpd.GeoDataFrame(final, geometry="geometry", crs=4326)
+    
+    table_name = f"grid_precision_{precision}"
+    gdf.to_postgis(name=table_name, con=engine, if_exists="replace")
 
-    all_levels.append(gdf)
-    print(f"Constructed gdf with {len(gdf)} rows for precision {precision}.")
+    print(f"Created table {table_name} with {len(gdf)} rows for precision {precision}.")
 
-# POSTGIS OUTPUT
-load_dotenv()
-engine = create_engine(os.environ["DATABASE_URL"])
-
-combined = pd.concat(all_levels, ignore_index=True)
-combined = gpd.GeoDataFrame(combined, geometry="rectangle", crs=4326)
-
-print(f"Writing {len(combined)} total grid rows to PostGIS ...")
-combined.to_postgis(name="grid_multilevel", con=engine, if_exists="replace")
-
-print("DONE: Table constructed in db.")
+print("DONE: All tables constructed in db.")

@@ -14,5 +14,4 @@ pygeohash==3.2.2
 sqlalchemy==2.0.47
 psycopg2==2.9.11
 GeoAlchemy2==0.18.3
-fastapi==0.133.1
 python-dotenv==1.1.1
