@@ -2,20 +2,20 @@ import dagster as dg
 import httpx
 
 from pathlib import Path
-from models.models import RawPBF
+from models.models import FileRef
 
 URL = "https://download.geofabrik.de/europe/denmark-latest.osm.pbf"
 DATA_DIR = Path("../data")
 DATA_DIR.mkdir(exist_ok=True)
 
 @dg.asset(kinds={"python"})
-async def denmark_raw(context: dg.AssetExecutionContext) -> RawPBF:
+async def denmark_raw(context: dg.AssetExecutionContext) -> FileRef:
     """Download the latest version of denmark.osm.pbf from Geofabrik"""
 
     out_path = DATA_DIR / "denmark-latest.osm.pbf"
     if out_path.exists():
         context.log.info(f"{out_path} already exists. Reusing asset...")
-        return RawPBF(out_path)
+        return FileRef(out_path)
 
     context.log.info(f"Downloading {URL} ...")
 
@@ -28,4 +28,4 @@ async def denmark_raw(context: dg.AssetExecutionContext) -> RawPBF:
                     f.write(chunk)
 
     context.log.info(f"Saved to {out_path}")
-    return RawPBF(out_path)
+    return FileRef(out_path)

@@ -1,15 +1,10 @@
 import dagster as dg
 import osmium
-import pickle
 
-from pathlib import Path
 from collections import defaultdict
 from osmium import filter, osm, geom
 from shapely import wkt, Point
-from models.models import RawPBF, GroupedAmenities
-
-DATA_DIR = Path("../data")
-DATA_DIR.mkdir(exist_ok=True)
+from models.models import FileRef
 
 CATEGORY_MAP = {
     # Education
@@ -31,6 +26,7 @@ CATEGORY_MAP = {
 
 def group(file_processor):
     """Group osm objects in FileProcessor by category. Objects returned as their centroid."""
+
     fab = geom.WKTFactory()
     grouped_points: defaultdict[str, list[Point]] = defaultdict(list)
 
@@ -56,13 +52,8 @@ def group(file_processor):
     return grouped_points
 
 @dg.asset(kinds={"python"})
-def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: RawPBF) -> GroupedAmenities:
+def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> dict[str, list[Point]]:
     """Group ammenities in the raw PBF data by categories"""
-
-    out_path = DATA_DIR / "grouped-amenities.pkl"
-    if out_path.exists():
-        context.log.info(f"{out_path} already exists. Reusing asset...")
-        return GroupedAmenities(out_path)
 
     fp = osmium.FileProcessor(denmark_raw).with_areas() \
         .with_filter(filter.EntityFilter(osm.NODE | osm.AREA))\
@@ -72,10 +63,7 @@ def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: RawPBF) ->
     for category, amenities in grouped_amenities.items():
         context.log.info(f"Found {len(amenities)} amenities for category {category}")
 
-    with open(out_path, "wb") as f:
-        pickle.dump(grouped_amenities, f)
-
-    return GroupedAmenities(out_path)
+    return grouped_amenities
 
 
 
