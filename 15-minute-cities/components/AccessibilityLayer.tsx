@@ -4,6 +4,7 @@ import VectorTileLayer from "./VectorTileLayer";
 import { AssertionError } from "assert";
 
 function zoomToTable(zoom: number): string {
+    if (zoom <= 8) return "public.grid_precision_5";
     if (zoom <= 11) return "public.grid_precision_6";
     if (zoom <= 14) return "public.grid_precision_7";
     if (zoom <= 18) return "public.edges";
