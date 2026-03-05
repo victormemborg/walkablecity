@@ -56,7 +56,7 @@ def group(file_processor):
     return grouped_points
 
 @dg.asset(kinds={"python"})
-async def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: RawPBF) -> GroupedAmenities:
+def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: RawPBF) -> GroupedAmenities:
     """Group ammenities in the raw PBF data by categories"""
 
     out_path = DATA_DIR / "grouped-amenities.pkl"
@@ -69,8 +69,8 @@ async def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: RawP
         .with_filter(filter.KeyFilter("amenity", "shop", "leisure", "building"))
 
     grouped_amenities = group(fp)
-    for g, amenities in grouped_amenities.items():
-        context.log.info(f"Found {len(amenities)} amenities for group {g}")
+    for category, amenities in grouped_amenities.items():
+        context.log.info(f"Found {len(amenities)} amenities for category {category}")
 
     with open(out_path, "wb") as f:
         pickle.dump(grouped_amenities, f)

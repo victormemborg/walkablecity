@@ -8,7 +8,7 @@ import pandana as pdna
 
 from pathlib import Path
 from osmium import filter, osm
-from models.models import WalkNetwork, RawPBF
+from models.models import Network, RawPBF
 
 DATA_DIR = Path("../data")
 DATA_DIR.mkdir(exist_ok=True)
@@ -30,13 +30,13 @@ def haversine_np(n1, n2):
     return R * c
 
 @dg.asset(kinds={"python"})
-async def walk_network(context: dg.AssetExecutionContext, denmark_raw: RawPBF) -> WalkNetwork:
+def walk_network(context: dg.AssetExecutionContext, denmark_raw: RawPBF) -> Network:
     """Create Pandana network from the raw data"""
 
     out_path = DATA_DIR / "walk-network.hdf5"
     if out_path.exists():
         context.log.info(f"{out_path} already exists. Reusing asset...")
-        return WalkNetwork(out_path)
+        return Network(out_path)
     
     context.log.info(f"Parsing {denmark_raw}...")
 
@@ -92,7 +92,7 @@ async def walk_network(context: dg.AssetExecutionContext, denmark_raw: RawPBF) -
     )
 
     network.save_hdf5(out_path)
-    return WalkNetwork(out_path)
+    return Network(out_path)
 
 
 

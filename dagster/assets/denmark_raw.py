@@ -8,7 +8,6 @@ URL = "https://download.geofabrik.de/europe/denmark-latest.osm.pbf"
 DATA_DIR = Path("../data")
 DATA_DIR.mkdir(exist_ok=True)
 
-
 @dg.asset(kinds={"python"})
 async def denmark_raw(context: dg.AssetExecutionContext) -> RawPBF:
     """Download the latest version of denmark.osm.pbf from Geofabrik"""
