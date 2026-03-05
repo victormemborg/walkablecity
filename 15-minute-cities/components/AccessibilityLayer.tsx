@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMap, useMapEvent } from "react-leaflet";
+import { useMapEvent } from "react-leaflet";
 import VectorTileLayer from "./VectorTileLayer";
 import { AssertionError } from "assert";
 

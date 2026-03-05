@@ -5,8 +5,6 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 
 import { MapContainer, TileLayer } from "react-leaflet";
-import Viewport from "./Viewport";
-import VectorTileLayer from "./VectorTileLayer";
 import AccessibilityLayer from "./AccessibilityLayer";
 
 export default function Map() {
