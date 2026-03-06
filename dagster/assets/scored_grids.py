@@ -1,5 +1,4 @@
 import dagster as dg
-import pandana as pdna
 import pandas as pd
 import pygeohash as pgh
 import geopandas as gpd
@@ -11,7 +10,7 @@ def box_hash(hash: str):
     return box(minx=min_lon, miny=min_lat, maxx=max_lon, maxy=max_lat)
 
 @dg.asset(kinds={"python"})
-async def scored_grids(context: dg.AssetExecutionContext, walk_network: pdna.Network, scored_nodes: pd.DataFrame) -> dict[int, gpd.GeoDataFrame]:
+async def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) -> dict[int, gpd.GeoDataFrame]:
     """Aggregate scored nodes into grids and average their scores"""
 
     PRECISION_LEVELS = [4, 5, 6, 7] # https://medium.com/@zaenun.faiz/processing-large-geospatial-dataset-using-geohash-spatial-index-6f78079951d3

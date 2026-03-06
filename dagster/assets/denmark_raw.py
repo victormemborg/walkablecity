@@ -19,7 +19,7 @@ async def denmark_raw(context: dg.AssetExecutionContext) -> FileRef:
 
     context.log.info(f"Downloading {URL} ...")
 
-    async with httpx.AsyncClient(timeout=None) as client:
+    async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:
         async with client.stream("GET", URL) as response:
             response.raise_for_status()
 

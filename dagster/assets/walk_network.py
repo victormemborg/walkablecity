@@ -25,13 +25,14 @@ def haversine_np(n1, n2):
 
     return R * c
 
-@dg.asset(kinds={"python"})
+@dg.asset(kinds={"python"}, io_manager_key="pandana_io_manager")
 def walk_network(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> pdna.Network:
     """Create Pandana network from the raw data"""
 
     context.log.info(f"Parsing {denmark_raw}...")
 
-    fp = osmium.FileProcessor(denmark_raw) \
+    file = denmark_raw.path
+    fp = osmium.FileProcessor(file) \
         .with_locations() \
         .with_filter(filter.EntityFilter(osm.WAY)) \
         .with_filter(filter.KeyFilter("highway"))

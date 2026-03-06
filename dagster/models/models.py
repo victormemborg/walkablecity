@@ -1,4 +1,6 @@
 from pathlib import Path
+from dataclasses import dataclass
 
-class FileRef(Path):
-    pass
+@dataclass
+class FileRef():
+    path: Path
