@@ -1,0 +1,58 @@
+name: Lint and test frontend and backend
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  frontend-lint:
+    name: Lint frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 15-minute-cities
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: 15-minute-cities/pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run frontend lint
+        run: pnpm lint
+
+  frontend-test:
+    name: Frontend test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 15-minute-cities
+    steps:
+      - name: Not implemented yet
+        run: echo "No frontend tests implemented yet. Skipping."
+
+  backend-lint:
+    name: Backend lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Not implemented yet
+        run: echo "No backend linting implemented yet. Skipping."
+
+  backend-test:
+    name: Backend test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Not implemented yet
+        run: echo "No backend tests implemented yet. Skipping."
