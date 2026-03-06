@@ -3,7 +3,7 @@ import pandana as pdna
 import pandas as pd
 
 @dg.asset(kinds={"python"})
-async def denmark_raw(context: dg.AssetExecutionContext, walk_network: pdna.Network, grouped_distances: dict[str, pd.DataFrame]) -> pd.DataFrame:
+async def scored_nodes(context: dg.AssetExecutionContext, walk_network: pdna.Network, grouped_distances: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Assign an accesibility score to each node in a network"""
 
     MAX_DIST = 1600 # Meters. Should be passed as run config

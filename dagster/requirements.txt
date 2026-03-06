@@ -4,3 +4,5 @@ pandana==0.7
 numpy==1.26.4
 osmium==4.3.0
 shapely==2.1.2
+pygeohash==3.2.2
+geopandas==1.1.2
