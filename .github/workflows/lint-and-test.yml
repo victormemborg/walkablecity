@@ -15,17 +15,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
           cache-dependency-path: 15-minute-cities/pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -34,24 +35,21 @@ jobs:
         run: pnpm lint
 
   frontend-test:
-    name: Frontend test
+    name: Test frontend
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 15-minute-cities
     steps:
       - name: Not implemented yet
         run: echo "No frontend tests implemented yet. Skipping."
 
   backend-lint:
-    name: Backend lint
+    name: Lint backend
     runs-on: ubuntu-latest
     steps:
       - name: Not implemented yet
         run: echo "No backend linting implemented yet. Skipping."
 
   backend-test:
-    name: Backend test
+    name: Test backend
     runs-on: ubuntu-latest
     steps:
       - name: Not implemented yet
