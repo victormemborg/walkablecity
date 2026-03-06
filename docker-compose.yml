@@ -1,8 +1,6 @@
 services:
   web:
-    build:
-      context: ./15-minute-cities
-      dockerfile: Dockerfile
+    image: vmemb/bachelorproject:latest
     env_file:
       - ./15-minute-cities/.env
     restart: unless-stopped
