@@ -18,3 +18,4 @@ jobs:
   deploy:
     needs: lint-and-test
     uses: ./.github/workflows/deploy.yml
+    secrets: inherit
