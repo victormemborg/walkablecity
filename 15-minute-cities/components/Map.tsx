@@ -9,6 +9,7 @@ import AccessibilityLayer from "./AccessibilityLayer";
 
 export default function Map() {
   const initialZoom = 11;
+  const baseTileUrl = process.env.NEXT_PUBLIC_TILESERV_URL ?? "http://localhost:7800/"; // default if not specificed
 
   return (
       <MapContainer
@@ -23,7 +24,7 @@ export default function Map() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <AccessibilityLayer 
-          baseTileUrl={"http://localhost:7800/"}
+          baseTileUrl={baseTileUrl}
           initialZoom={initialZoom}
         />
       </MapContainer>
