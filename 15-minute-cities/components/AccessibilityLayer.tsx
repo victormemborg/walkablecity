@@ -11,7 +11,7 @@ function zoomToTable(zoom: number): string {
     throw new AssertionError({message: "unhandled zoom level"});
 };
 
-export default function AccessibilityLayer({baseTileUrl, initialZoom}: {baseTileUrl: string, initialZoom: number}) {
+export default function AccessibilityLayer({ initialZoom }: { initialZoom: number }) {
     const [table, setTable] = useState(() => zoomToTable(initialZoom));
 
     useMapEvent("zoomend", e => {
@@ -19,7 +19,7 @@ export default function AccessibilityLayer({baseTileUrl, initialZoom}: {baseTile
         setTable(newTable);
     });
 
-    const url = `${baseTileUrl}${table}/{z}/{x}/{y}.pbf`;
+    const url = `/tiles/${table}/{z}/{x}/{y}.pbf`;
 
     return (
         <VectorTileLayer
