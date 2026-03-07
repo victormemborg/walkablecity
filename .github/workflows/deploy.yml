@@ -1,88 +1,44 @@
-name: CI and Deploy To Server
+name: Deployment of frontend
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "15-minute-cities/**"
-      - "docker-compose.yml"
-      - ".github/workflows/deploy.yml"
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
-  group: production-deploy
+  group: cd
   cancel-in-progress: true
 
 jobs:
-  test:
+  build:
+    name: Build and upload to Docker Hub
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 15-minute-cities
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
         with:
-          version: 10
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: 15-minute-cities/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Build
-        run: pnpm build
+      - name: Build and push frontend image
+        run: |
+          docker build -t vmemb/bachelorproject:latest -f 15-minute-cities/Dockerfile .
+          docker push vmemb/bachelorproject:latest
 
   deploy:
+    name: Deploy to server
+    needs: build
     runs-on: ubuntu-latest
-    needs: [test]
-    environment: production
-    permissions:
-      contents: read
-
     steps:
-      - name: Load deploy SSH key
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Deploy using SSH
+        uses: appleboy/ssh-action@v1.2.5
         with:
-          ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
-
-      - name: Configure known_hosts
-        env:
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Deploy on server
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          set -euo pipefail
-          ssh -p "${DEPLOY_PORT:-22}" "${DEPLOY_USER}@${DEPLOY_HOST}" "DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'EOF'
-            set -euo pipefail
-            cd "$DEPLOY_PATH"
-
-            git fetch origin main
-            git checkout main
-            git pull --ff-only origin main
-
-            docker compose up --build -d --remove-orphans
-          EOF
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.SERVER_USER }}/bachelor-thesis
+            docker compose pull
+            docker compose up -d
