@@ -24,7 +24,7 @@ jobs:
 
       - name: Build and push frontend image
         run: |
-          docker build -t vmemb/bachelorproject:latest -f 15-minute-cities/Dockerfile .
+          docker build --build-arg TILESERV_INTERNAL_URL=http://tileserv:7800 -t vmemb/bachelorproject:latest -f 15-minute-cities/Dockerfile .
           docker push vmemb/bachelorproject:latest
 
   deploy:

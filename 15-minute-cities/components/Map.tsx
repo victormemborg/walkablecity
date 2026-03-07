@@ -9,7 +9,7 @@ import AccessibilityLayer from "./AccessibilityLayer";
 
 export default function Map() {
   const initialZoom = 11;
-  const baseTileUrl = process.env.NEXT_PUBLIC_TILESERV_URL ?? "http://localhost:7800/"; // default if not specificed
+  const baseTileUrl = "/tiles/";
 
   return (
       <MapContainer
