@@ -8,7 +8,7 @@ on:
     paths:
       - '15-minute-cities/**'
       - 'preprocessing/**'
-      - 'docker-compose.yml'
+      - 'docker-compose.prod.yml'
       - '.github/workflows/**'
   workflow_dispatch:
 
