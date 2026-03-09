@@ -9,6 +9,7 @@ import AccessibilityLayer from "./AccessibilityLayer";
 
 export default function Map() {
   const initialZoom = 11;
+  const baseTileUrl = "/tiles/";
 
   return (
       <MapContainer
@@ -23,7 +24,7 @@ export default function Map() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <AccessibilityLayer 
-          baseTileUrl={"http://localhost:7800/"}
+          baseTileUrl={baseTileUrl}
           initialZoom={initialZoom}
         />
       </MapContainer>

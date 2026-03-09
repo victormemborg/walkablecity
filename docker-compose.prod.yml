@@ -1,0 +1,46 @@
+services:
+  postgis:
+    image: postgis/postgis:latest
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: vmemb/bachelorproject:latest
+    env_file:
+        - .env
+    restart: unless-stopped
+    depends_on:
+      postgis:
+        condition: service_healthy
+      tileserv:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
+  tileserv:
+    image: pramsey/pg_tileserv:latest
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      postgis:
+        condition: service_healthy
+    ports:
+      - "7800:7800"
+
+volumes:
+  postgis_data:
+    external: true # since the volume was initially created outside of this compose file
+    name: bachelor_postgis_data

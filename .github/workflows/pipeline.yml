@@ -1,0 +1,20 @@
+name: CI/CD pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '15-minute-cities/**'
+      - 'preprocessing/**'
+      - 'docker-compose.prod.yml'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    uses: ./.github/workflows/lint-and-test.yml
+  deploy:
+    needs: lint-and-test
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
