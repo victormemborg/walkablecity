@@ -4,7 +4,7 @@ import pandas as pd
 
 from shapely import Point
 
-@dg.asset(kinds={"python"}, io_manager_key="pandana_io_manager")
+@dg.asset(kinds={"python"})
 def grouped_distances(context: dg.AssetExecutionContext, walk_network: pdna.Network, grouped_amenities: dict[str, list[Point]]) -> dict[str, pd.DataFrame]:
     """Calculates the distances to each amenity group/category for every node in a network"""
 

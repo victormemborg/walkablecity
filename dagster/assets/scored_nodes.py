@@ -2,7 +2,7 @@ import dagster as dg
 import pandana as pdna
 import pandas as pd
 
-@dg.asset(kinds={"python"}, io_manager_key="pandana_io_manager")
+@dg.asset(kinds={"python"})
 async def scored_nodes(context: dg.AssetExecutionContext, walk_network: pdna.Network, grouped_distances: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Assign an accesibility score to each node in a network"""
 
