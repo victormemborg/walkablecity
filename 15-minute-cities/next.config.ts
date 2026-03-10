@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    // don't rewrite in prod as we want to serve the tiles directly from nginx
+    if (process.env.NODE_ENV === "production") {
+      return [];
+    }
+
     const destination =
       process.env.TILESERV_INTERNAL_URL ?? "http://localhost:7800";
 
