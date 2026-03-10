@@ -8,6 +8,7 @@ on:
       - '15-minute-cities/**'
       - 'preprocessing/**'
       - 'docker-compose.prod.yml'
+      - 'nginx/**'
       - '.github/workflows/**'
   workflow_dispatch:
 
