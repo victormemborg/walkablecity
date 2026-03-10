@@ -6,7 +6,7 @@ import pandana as pdna
 class PandanaNetworkIOManager(IOManager):
     """Custom IO manager for pandana Network objects using HDF5 storage."""
 
-    def __init__(self, base_dir: str = "/tmp/dagster_pandana"):
+    def __init__(self, base_dir: str):
         self.base_dir = base_dir
         os.makedirs(base_dir, exist_ok=True)
 
