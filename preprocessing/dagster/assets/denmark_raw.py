@@ -10,9 +10,7 @@ URL = "https://download.geofabrik.de/europe/denmark-latest.osm.pbf"
 async def denmark_raw(context: dg.AssetExecutionContext) -> FileRef:
     """Download the latest version of denmark.osm.pbf from Geofabrik"""
 
-    base_dir = os.path.join(context.instance.storage_directory(), "storage")
-    out_path = os.path.join(base_dir, "denmark-latest.osm.pbf")
-
+    out_path = os.path.join(context.instance.storage_directory(), "denmark-latest.osm.pbf")
     context.log.info(f"Downloading {URL} ...")
 
     async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:

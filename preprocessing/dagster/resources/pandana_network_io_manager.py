@@ -1,5 +1,5 @@
 import os
-from dagster import IOManager, io_manager, InputContext, OutputContext
+from dagster import IOManager, io_manager, InputContext, OutputContext, DagsterInstance
 import pandana as pdna
 
 
@@ -7,7 +7,7 @@ class PandanaNetworkIOManager(IOManager):
     """Custom IO manager for pandana Network objects using HDF5 storage."""
 
     def _get_path(self, context) -> str:
-        base_dir = os.path.join(context.instance.storage_directory(), "storage")
+        base_dir = DagsterInstance.get().storage_directory()
 
         if context.has_asset_key:
             return os.path.join(base_dir, *context.asset_key.path)
