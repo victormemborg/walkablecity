@@ -6,4 +6,7 @@ osmium==4.3.0
 shapely==2.1.2
 pygeohash==3.2.2
 geopandas==1.1.2
-psycopg2==2.9.11
+psycopg2-binary==2.9.11
+dagster
+dagster-postgres
+dagster-docker
