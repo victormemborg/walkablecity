@@ -6,14 +6,17 @@ import pandana as pdna
 class PandanaNetworkIOManager(IOManager):
     """Custom IO manager for pandana Network objects using HDF5 storage."""
 
-    def __init__(self, base_dir: str):
-        self.base_dir = base_dir
-        os.makedirs(base_dir, exist_ok=True)
-
     def _get_path(self, context) -> str:
-        parts = context.asset_key.path if context.has_asset_key else [context.step_key, context.name]
-        filename = "__".join(parts) + ".h5"
-        return os.path.join(self.base_dir, filename)
+        base_dir = os.path.join(context.instance.storage_directory(), "storage")
+
+        if context.has_asset_key:
+            return os.path.join(base_dir, *context.asset_key.path)
+
+        return os.path.join(
+            base_dir,
+            context.step_key,
+            context.name,
+        )
 
     def handle_output(self, context: OutputContext, obj: pdna.Network):
         path = self._get_path(context)
@@ -26,8 +29,6 @@ class PandanaNetworkIOManager(IOManager):
         return pdna.Network.from_hdf5(path)
 
 
-@io_manager(config_schema={"base_dir": str})
-def pandana_network_io_manager(context):
-    return PandanaNetworkIOManager(
-        base_dir=context.resource_config.get("base_dir", "/tmp/dagster_pandana")
-    )
+@io_manager()
+def pandana_network_io_manager():
+    return PandanaNetworkIOManager()
