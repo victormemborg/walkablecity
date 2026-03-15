@@ -5,14 +5,14 @@ from dotenv import load_dotenv
 from dagster import asset, AssetIn, AssetKey, AssetExecutionContext, AssetsDefinition
 from models.models import GeometryCollection, PostGISTable
 
-def geometry_to_postgis_table(upstream: AssetKey, schema = "public"):
+def geometry_to_postgis_asset(upstream: AssetKey, partitions_def=None, schema="public"):
     """Returns a new PostGISTable asset from upstream GeometryCollection asset"""
     upstream_name = upstream.path[-1]
 
     @asset(
         name=f"{upstream_name}_postgis",
-        ins={"geometry_collection": AssetIn(key=upstream),
-        },
+        ins={"geometry_collection": AssetIn(key=upstream)},
+        partitions_def=partitions_def
     )
     def write_to_postgis(context: AssetExecutionContext, geometry_collection: GeometryCollection) -> PostGISTable:
         """The new PostGISTable asset"""

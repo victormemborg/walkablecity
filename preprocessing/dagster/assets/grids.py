@@ -5,22 +5,18 @@ import geopandas as gpd
 
 from shapely.geometry import box
 from models.models import GeometryCollection
+from assets.factories.geometry_to_postgis_table import geometry_to_postgis_asset
+
 
 PRECISION_LEVELS = ["4", "5", "6", "7"]
 precision_partitions = dg.StaticPartitionsDefinition(PRECISION_LEVELS)
-
-def asset_name(precision_level: int):
-    return f"scored_grids_p{precision_level}"
 
 def box_hash(hash: str):
     min_lat, min_lon, max_lat, max_lon = pgh.get_bounding_box(hash)
     return box(minx=min_lon, miny=min_lat, maxx=max_lon, maxy=max_lat)
 
-@dg.asset(
-    partitions_def=precision_partitions,
-    group_name="scored_grids"
-)
-def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame):
+@dg.asset(kinds={"python"}, partitions_def=precision_partitions)
+def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) -> GeometryCollection:
     """Aggregate scored nodes into grids and average their scores"""
 
     level = int(context.partition_key)
@@ -42,6 +38,8 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame):
     
     context.log.info(f"Created GeometryCollection with {len(gdf)} rows for precision {level}.")
     return GeometryCollection(gdf, level)
+
+scored_grids_postgis = geometry_to_postgis_asset(scored_grids.key, partitions_def=precision_partitions)
 
 
     

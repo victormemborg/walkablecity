@@ -5,7 +5,7 @@ import geopandas as gpd
 
 from shapely.geometry import LineString
 from models.models import GeometryCollection
-from assets.factories.geometry_to_postgis_table import geometry_to_postgis_table
+from assets.factories.geometry_to_postgis_table import geometry_to_postgis_asset
 
 @dg.asset(kinds={"python"})
 async def scored_edges(context: dg.AssetExecutionContext, walk_network: pdna.Network, scored_nodes: pd.DataFrame) -> GeometryCollection:
@@ -42,4 +42,4 @@ async def scored_edges(context: dg.AssetExecutionContext, walk_network: pdna.Net
     gdf = gpd.GeoDataFrame(edges, geometry="geometry", crs=4326)
     return GeometryCollection(gdf, 0)
 
-scored_edges_postgis = geometry_to_postgis_table(scored_edges.key)
+scored_edges_postgis = geometry_to_postgis_asset(scored_edges.key)
