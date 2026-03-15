@@ -36,7 +36,6 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) 
     final = grouped[["geometry", "score"]]
     gdf = gpd.GeoDataFrame(final, geometry="geometry", crs=4326)
     
-    context.log.info(f"Created GeometryCollection with {len(gdf)} rows for precision {level}.")
     return GeometryCollection(gdf, level)
 
 scored_grids_postgis = geometry_to_postgis_asset(scored_grids.key, partitions_def=precision_partitions)

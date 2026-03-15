@@ -28,6 +28,7 @@ def geometry_to_postgis_asset(upstream: AssetKey, partitions_def=None, schema="p
         context.add_output_metadata({
             "table": table_name,
             "schema": schema,
+            "rows": len(geometry_collection.geometry)
         })
 
         return PostGISTable(table_name, connection_str, schema)
