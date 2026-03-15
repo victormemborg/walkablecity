@@ -7,11 +7,10 @@ RUN pip install \
     dagster-postgres \
     dagster-docker
 
-# Set $DAGSTER_HOME and copy dagster.yaml and workspace.yaml there
-ENV DAGSTER_HOME=/opt/dagster/dagster_home/
+ARG DAGSTER_HOME
+ENV DAGSTER_HOME=${DAGSTER_HOME}
 
-RUN mkdir -p $DAGSTER_HOME
+WORKDIR ${DAGSTER_HOME}
 
-COPY dagster.yaml workspace.yaml $DAGSTER_HOME
+COPY dagster.yaml workspace.yaml ./
 
-WORKDIR $DAGSTER_HOME
