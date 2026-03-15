@@ -5,7 +5,7 @@ import geopandas as gpd
 
 from shapely.geometry import box
 from models.models import GeometryCollection
-from assets.factories.geometry_to_postgis_table import geometry_to_postgis_asset
+from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 
 
 PRECISION_LEVELS = ["4", "5", "6", "7"]
