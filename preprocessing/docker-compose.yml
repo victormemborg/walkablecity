@@ -1,0 +1,115 @@
+# Taken from https://docs.dagster.io/deployment/oss/deployment-options/docker
+
+services:
+  # This service runs the postgres DB used by dagster for run storage, schedule storage,
+  # and event log storage. Depending on the hardware you run this Compose on, you may be able
+  # to reduce the interval and timeout in the healthcheck to speed up your `docker-compose up` times.
+  dagtser_postgres:
+    image: postgres:17
+    container_name: dagtser_postgres
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'dagtser123!'
+      POSTGRES_DB: 'dagtser_db'
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d dagtser_db']
+      interval: 10s
+      timeout: 8s
+      retries: 5
+
+  # This service runs the gRPC server that loads your user code, in both dagster-webserver
+  # and dagster-daemon. By setting DAGSTER_CURRENT_IMAGE to its own image, we tell the
+  # run launcher to use this same image when launching runs in a new container as well.
+  # Multiple containers like this can be deployed separately - each just needs to run on
+  # its own port, and have its own entry in the workspace.yaml file that's loaded by the
+  # webserver.
+  dagster_user_code:
+    build:
+      context: ./dagster/
+      dockerfile: ./Dockerfile
+    container_name: dagster_user_code
+    image: dagster_user_code_image
+    restart: always
+    environment:
+      DAGSTER_HOME: '/opt/dagster/dagster_home/'
+      DAGSTER_POSTGRES_USER: 'postgres'
+      DAGSTER_POSTGRES_PASSWORD: 'dagtser123!'
+      DAGSTER_POSTGRES_DB: 'dagtser_db'
+      DAGSTER_CURRENT_IMAGE: 'dagster_user_code_image'
+    volumes:
+      - dagster_home:/opt/dagster/dagster_home
+    networks:
+      - internal
+
+  # This service runs dagster-webserver, which loads your user code from the user code container.
+  # Since our instance uses the QueuedRunCoordinator, any runs submitted from the webserver will be put on
+  # a queue and later dequeued and launched by dagster-daemon.
+  dagtser_webserver:
+    build:
+      context: ./docker/
+      dockerfile: ./Dockerfile
+    entrypoint:
+      - dagster-webserver
+      - -h
+      - '0.0.0.0'
+      - -p
+      - '3000'
+      - -w
+      - workspace.yaml
+    container_name: dagtser_webserver
+    expose:
+      - '3000'
+    ports:
+      - '3000:3000'
+    environment:
+      DAGSTER_POSTGRES_USER: 'postgres'
+      DAGSTER_POSTGRES_PASSWORD: 'dagtser123!'
+      DAGSTER_POSTGRES_DB: 'dagtser_db'
+    volumes: # Make docker client accessible so we can terminate containers from the webserver
+      - dagster_home:/opt/dagster/dagster_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - internal
+    depends_on:
+      dagtser_postgres:
+        condition: service_healthy
+      dagster_user_code:
+        condition: service_healthy
+
+  # This service runs the dagster-daemon process, which is responsible for taking runs
+  # off of the queue and launching them, as well as creating runs from schedules or sensors.
+  dagster_daemon:
+    build:
+      context: ./docker/
+      dockerfile: ./Dockerfile
+    entrypoint:
+      - dagster-daemon
+      - run
+    container_name: dagster_daemon
+    restart: on-failure
+    environment:
+      DAGSTER_POSTGRES_USER: 'postgres'
+      DAGSTER_POSTGRES_PASSWORD: 'dagtser123!'
+      DAGSTER_POSTGRES_DB: 'dagtser_db'
+    volumes: # Make docker client accessible so we can launch containers using host docker
+      - dagster_home:/opt/dagster/dagster_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - internal
+    depends_on:
+      dagtser_postgres:
+        condition: service_healthy
+      dagster_user_code:
+        condition: service_started
+
+networks:
+  internal:
+    driver: bridge
+    name: internal
+  
+volumes:
+  dagster_home:
