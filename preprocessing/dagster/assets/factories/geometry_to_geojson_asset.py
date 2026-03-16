@@ -7,12 +7,12 @@ from dagster import asset, AssetIn, AssetKey, AssetExecutionContext, AssetsDefin
 from models.models import FileRef
 
 def geometry_to_geojson_asset(upstream: AssetKey, partitions_def=None, schema="public"):
-    """Returns a new GeoJSON asset from upstream GeometryCollection asset"""
+    """Returns a new GeoJSON asset from upstream GeoDataFrame asset"""
     upstream_name = upstream.path[-1]
 
     @asset(
         name=f"{upstream_name}_geojson",
-        ins={"geometry_collection": AssetIn(key=upstream)},
+        ins={"geometry": AssetIn(key=upstream)},
         partitions_def=partitions_def,
         kinds={"python"},
     )
@@ -24,7 +24,7 @@ def geometry_to_geojson_asset(upstream: AssetKey, partitions_def=None, schema="p
 
         out_path = os.path.join(context.instance.storage_directory(), file_name)
         geometry.to_file(out_path, driver="GeoJSON")
-        
+
         context.add_output_metadata({
             "rows": len(geometry)
         })
