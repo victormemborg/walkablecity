@@ -3,15 +3,16 @@ import geopandas as gpd
 
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
-from dagster import asset, AssetIn, AssetKey, AssetExecutionContext, AssetsDefinition
+from dagster import asset, AssetIn, AssetKey, AssetExecutionContext
 from models.models import PostGISTable
 
 def geometry_to_postgis_asset(upstream: AssetKey, partitions_def=None, schema="public"):
     """Returns a new PostGIS asset from upstream GeoDataFrame asset"""
     upstream_name = upstream.path[-1]
+    asset_name = f"{upstream_name}_postgis"
 
     @asset(
-        name=f"{upstream_name}_postgis",
+        name=asset_name,
         ins={"geometry": AssetIn(key=upstream)},
         partitions_def=partitions_def,
         kinds={"python"},
@@ -21,10 +22,10 @@ def geometry_to_postgis_asset(upstream: AssetKey, partitions_def=None, schema="p
 
         load_dotenv()
         connection_str = os.environ["DATABASE_URL"]
-        partition = context.partition_key if partitions_def else "0"
+        precision = context.partition_key if partitions_def else "0"
 
         engine = create_engine(connection_str)
-        table_name = f"{upstream_name}_precision_{partition}"
+        table_name = f"{asset_name}_p{precision}"
 
         geometry.to_postgis(name=table_name, con=engine, if_exists="replace")
 

@@ -5,7 +5,7 @@ import geopandas as gpd
 
 from shapely.geometry import box
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
-from assets.factories.geometry_to_geojson_asset import geometry_to_geojson_asset
+from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
 
 
 PRECISION_LEVELS = ["4", "5", "6", "7"]
@@ -38,7 +38,7 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) 
 
 scored_grids_postgis = geometry_to_postgis_asset(scored_grids.key, partitions_def=precision_partitions)
 
-scored_grids_geojson = geometry_to_geojson_asset(scored_grids.key, partitions_def=precision_partitions)
+scored_grids_pmtiles = geometry_to_pmtiles_asset(scored_grids.key, partitions_def=precision_partitions)
 
 
     
