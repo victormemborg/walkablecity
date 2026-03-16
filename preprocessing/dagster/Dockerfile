@@ -1,4 +1,16 @@
-FROM python:3.12-bookworm
+FROM python:3.12-bookworm AS tippecanoe-builder
+
+WORKDIR /build
+RUN git clone https://github.com/felt/tippecanoe.git
+
+WORKDIR /build/tippecanoe
+RUN make -j
+RUN make install
+
+
+FROM python:3.12-bookworm AS dagster-runner
+
+COPY --from=tippecanoe-builder /usr/local/bin/tippecanoe /usr/local/bin/
 
 WORKDIR /opt/dagster/app
 
