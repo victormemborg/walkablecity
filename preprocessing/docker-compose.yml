@@ -15,11 +15,11 @@ services:
     image: dagster_user_code_image
     restart: always
     environment:
-      DAGSTER_HOME: '/opt/dagster/dagster_home/'
+      DAGSTER_HOME: ${DAGSTER_HOME}
       DAGSTER_CURRENT_IMAGE: 'dagster_user_code_image'
       DATABASE_URL: ${DATABASE_URL}
     volumes:
-      - dagster_home:/opt/dagster/dagster_home
+      - dagster_home:${DAGSTER_HOME}
     networks:
       - internal
     healthcheck:
@@ -37,7 +37,7 @@ services:
       context: ./docker/
       dockerfile: ./Dockerfile
       args:
-        - DAGSTER_HOME=/opt/dagster/dagster_home/
+        - DAGSTER_HOME=${DAGSTER_HOME}
     entrypoint:
       - dagster-webserver
       - -h
@@ -52,7 +52,7 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - dagster_home:/opt/dagster/dagster_home
+      - dagster_home:${DAGSTER_HOME}
     networks:
       - internal
     depends_on:
@@ -66,14 +66,14 @@ services:
       context: ./docker/
       dockerfile: ./Dockerfile
       args:
-        - DAGSTER_HOME=/opt/dagster/dagster_home/
+        - DAGSTER_HOME=${DAGSTER_HOME}
     entrypoint:
       - dagster-daemon
       - run
     container_name: dagster_daemon
     restart: on-failure
     volumes: 
-      - dagster_home:/opt/dagster/dagster_home
+      - dagster_home:${DAGSTER_HOME}
     networks:
       - internal
     depends_on:

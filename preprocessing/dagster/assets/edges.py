@@ -4,11 +4,10 @@ import pandas as pd
 import geopandas as gpd
 
 from shapely.geometry import LineString
-from models.models import GeometryCollection
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 
 @dg.asset(kinds={"python"})
-async def scored_edges(context: dg.AssetExecutionContext, walk_network: pdna.Network, scored_nodes: pd.DataFrame) -> GeometryCollection:
+async def scored_edges(context: dg.AssetExecutionContext, walk_network: pdna.Network, scored_nodes: pd.DataFrame) -> gpd.GeoDataFrame:
     """Assign an accesibility score to each edge"""
 
     edges = walk_network.edges_df.merge(
@@ -39,7 +38,6 @@ async def scored_edges(context: dg.AssetExecutionContext, walk_network: pdna.Net
     edges = edges[["geometry", "score"]]
     edges = edges[edges["score"] > 0]
 
-    gdf = gpd.GeoDataFrame(edges, geometry="geometry", crs=4326)
-    return GeometryCollection(gdf, 0)
+    return gpd.GeoDataFrame(edges, geometry="geometry", crs=4326)
 
 scored_edges_postgis = geometry_to_postgis_asset(scored_edges.key)

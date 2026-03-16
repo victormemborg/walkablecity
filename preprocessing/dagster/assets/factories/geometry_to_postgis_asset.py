@@ -1,34 +1,37 @@
 import os
+import geopandas as gpd
 
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from dagster import asset, AssetIn, AssetKey, AssetExecutionContext, AssetsDefinition
-from models.models import GeometryCollection, PostGISTable
+from models.models import PostGISTable
 
 def geometry_to_postgis_asset(upstream: AssetKey, partitions_def=None, schema="public"):
-    """Returns a new PostGISTable asset from upstream GeometryCollection asset"""
+    """Returns a new PostGIS asset from upstream GeometryCollection asset"""
     upstream_name = upstream.path[-1]
 
     @asset(
         name=f"{upstream_name}_postgis",
         ins={"geometry_collection": AssetIn(key=upstream)},
-        partitions_def=partitions_def
+        partitions_def=partitions_def,
+        kinds={"python"},
     )
-    def write_to_postgis(context: AssetExecutionContext, geometry_collection: GeometryCollection) -> PostGISTable:
-        """The new PostGISTable asset"""
+    def write_to_postgis(context: AssetExecutionContext, geometry: gpd.GeoDataFrame) -> PostGISTable:
+        """The new PostGIS asset"""
 
         load_dotenv()
         connection_str = os.environ["DATABASE_URL"]
+        partition = context.partition_key if partitions_def else "0"
 
         engine = create_engine(connection_str)
-        table_name = f"{upstream_name}_precision_{geometry_collection.precision_level}"
+        table_name = f"{upstream_name}_precision_{partition}"
 
-        geometry_collection.geometry.to_postgis(name=table_name, con=engine, if_exists="replace")
+        geometry.to_postgis(name=table_name, con=engine, if_exists="replace")
 
         context.add_output_metadata({
             "table": table_name,
             "schema": schema,
-            "rows": len(geometry_collection.geometry)
+            "rows": len(geometry)
         })
 
         return PostGISTable(table_name, connection_str, schema)
