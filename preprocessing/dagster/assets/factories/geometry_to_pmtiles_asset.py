@@ -3,6 +3,7 @@ import geopandas as gpd
 import subprocess
 import json
 import threading
+import tempfile
 
 from dagster import asset, AssetIn, AssetKey, AssetExecutionContext
 from models.models import FileRef
@@ -26,40 +27,28 @@ def geometry_to_pmtiles_asset(upstream: AssetKey, partitions_def=None):
         file_name = f"{asset_name}_p{precision}.pmtiles"
         out_path = os.path.join(context.instance.storage_directory(), file_name)
 
-        proc = subprocess.Popen(
+        with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as tmp:
+            tmp_path = tmp.name
+
+        geometry.to_file(tmp_path, driver="GeoJSON")
+
+        proc = subprocess.run(
             ["tippecanoe", 
+             f"--output={out_path}",
              "--minimum-zoom=0",
              "--maximum-zoom=18", 
-             "--read-parallel", 
-             f"--output={out_path}", 
+             "--read-parallel",  
              "--drop-densest-as-needed" ,
              "--force",
-             "--no-progress-indicator",],
-            stdin=subprocess.PIPE,
-            text=True,
+             "--no-progress-indicator",
+             "--simplification=10",
+             "--hilbert",
+             tmp_path],
+            check=True,
         )
 
-        stdin = proc.stdin
-        if stdin is None:
-            raise AttributeError(stdin)
-
-        try:
-            for _, row in geometry.iterrows():
-                feature = {
-                    "type": "Feature",
-                    "geometry": row.geometry.__geo_interface__,
-                    "properties": row.drop("geometry").to_dict(),
-                }
-
-                stdin.write(json.dumps(feature) + "\n")
-
-        finally:
-            stdin.close()
-        
-        proc.wait()
-
-        if proc.returncode != 0:
-            raise RuntimeError("tippecanoe failed")
+        os.remove(tmp_path)
+        proc.check_returncode()
 
         return FileRef(out_path)
 
