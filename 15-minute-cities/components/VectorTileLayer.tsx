@@ -21,7 +21,7 @@ function getNearestGradientColor(value: number): string {
   return GRADIENT[nearest];
 }
 
-export default function VectorTileLayer({ url, layerName}: {url: string, layerName: string}) {
+export default function VectorTileLayer({url, layerName}: {url: string, layerName: string}) {
     const map = useMap();
 
     useEffect(() => {
