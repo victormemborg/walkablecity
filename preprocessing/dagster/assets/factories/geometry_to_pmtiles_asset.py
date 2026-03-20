@@ -33,11 +33,12 @@ def geometry_to_pmtiles_asset(upstream: AssetKey, partitions_def=None):
         geometry.to_file(tmp_path, driver="GeoJSON")
 
         proc = subprocess.run(
-            ["tippecanoe", 
+            ["tippecanoe",
+             f"--layer={file_name}",
              f"--output={out_path}",
              "--minimum-zoom=0",
-             "--maximum-zoom=18", 
-             "--read-parallel",  
+             "--maximum-zoom=18",
+             "--read-parallel",
              "--drop-densest-as-needed" ,
              "--force",
              "--no-progress-indicator",
