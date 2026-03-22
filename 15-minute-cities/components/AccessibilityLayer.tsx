@@ -4,10 +4,10 @@ import VectorTileLayer from "./VectorTileLayer";
 import { AssertionError } from "assert";
 
 function zoomToTable(zoom: number): string {
-    if (zoom <= 8) return "public.grid_precision_5";
-    if (zoom <= 11) return "public.grid_precision_6";
-    if (zoom <= 14) return "public.grid_precision_7";
-    if (zoom <= 18) return "public.edges";
+    if (zoom <= 8) return "scored_grids_pmtiles_p5";
+    if (zoom <= 11) return "scored_grids_pmtiles_p6";
+    if (zoom <= 14) return "scored_grids_pmtiles_p7";
+    if (zoom <= 18) return "scored_edges_pmtiles_p0";
     throw new AssertionError({message: "unhandled zoom level"});
 };
 
@@ -19,12 +19,11 @@ export default function AccessibilityLayer({baseTileUrl, initialZoom}: {baseTile
         setTable(newTable);
     });
 
-    const url = `${baseTileUrl}${table}/{z}/{x}/{y}.pbf`;
-
+    const url = `${baseTileUrl}${table}/{z}/{x}/{y}`;
     return (
         <VectorTileLayer
           url={url}
-          layerName={table}
+          layerName={`${table}.pmtiles`}
         />
     )
 }
