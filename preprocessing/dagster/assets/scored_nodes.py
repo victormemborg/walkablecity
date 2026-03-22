@@ -15,14 +15,16 @@ async def scored_nodes(
     
     dist_df = pd.concat(
         [df["dist"] for df in grouped_distances.values()],
-        axis=1
+        axis="columns"
     )
 
     nodes = walk_network.nodes_df
-    nodes["score"] = dist_df.max(axis="columns")
-    nodes["score"] = nodes["score"].apply(lambda dist: abs(dist - global_config.max_distance))
-    scored = nodes[nodes["score"] <= global_config.max_distance]
+    nodes["dist"] = dist_df.max(axis="columns")
 
-    context.log.info(f"Found {len(scored)} scored nodes")
-    return scored
+    filtered = nodes[nodes["dist"] <= global_config.max_distance]
+    filtered["score"] = abs(filtered["dist"] - global_config.max_distance)
+    filtered.drop(columns=["dist"])
+
+    context.log.info(f"Found {len(filtered)} scored nodes")
+    return filtered
 
