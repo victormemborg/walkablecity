@@ -9,6 +9,7 @@ from assets.scored_nodes import scored_nodes
 from assets.walk_network import walk_network
 
 from resources.pandana_network_io_manager import pandana_network_io_manager
+from resources.global_config import GlobalConfig
 
 defs = dg.Definitions(
     assets=[
@@ -18,6 +19,7 @@ defs = dg.Definitions(
         scored_grids_pmtiles
     ],
     resources={
-        "pandana_io_manager": pandana_network_io_manager
+        "pandana_io_manager": pandana_network_io_manager,
+        "global_config": GlobalConfig(max_distance=1600)
     }
 )
