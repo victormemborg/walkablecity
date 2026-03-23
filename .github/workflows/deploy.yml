@@ -32,7 +32,7 @@ jobs:
     needs: build
     environment:
       name: production
-      url: http://144.91.92.236:3000
+      url: https://walkablecity.app
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
