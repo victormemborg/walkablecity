@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     }
 
     const destination =
-      process.env.TILESERV_INTERNAL_URL ?? "http://localhost:7800";
+      process.env.MARTIN_URL ?? "http://localhost:3001";
 
     return [
       {

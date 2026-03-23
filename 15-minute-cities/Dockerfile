@@ -9,8 +9,8 @@ COPY 15-minute-cities/package.json 15-minute-cities/pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile
 
 FROM base AS builder
-ARG TILESERV_INTERNAL_URL=http://localhost:7800
-ENV TILESERV_INTERNAL_URL=$TILESERV_INTERNAL_URL
+ARG MARTIN_URL=http://localhost:3001
+ENV MARTIN_URL=$MARTIN_URL
 COPY 15-minute-cities/ .
 COPY --from=deps /app/node_modules ./node_modules
 RUN pnpm build
