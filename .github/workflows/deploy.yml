@@ -24,7 +24,7 @@ jobs:
 
       - name: Build and push frontend image
         run: |
-          docker build --build-arg TILESERV_INTERNAL_URL=http://tileserv:7800 -t vmemb/bachelorproject:latest -f 15-minute-cities/Dockerfile .
+          docker build --build-arg MARTIN_URL=http://martin:3001 -t vmemb/bachelorproject:latest -f 15-minute-cities/Dockerfile .
           docker push vmemb/bachelorproject:latest
 
   deploy:
@@ -32,7 +32,7 @@ jobs:
     needs: build
     environment:
       name: production
-      url: http://144.91.92.236:3000
+      url: https://walkablecity.app
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -67,4 +67,4 @@ jobs:
           script: |
             cd /home/${{ secrets.SERVER_USER }}/bachelor-thesis
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans

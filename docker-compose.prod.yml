@@ -5,7 +5,7 @@ services:
     depends_on:
       web:
         condition: service_started
-      tileserv:
+      martin:
         condition: service_started
     ports:
       - "80:80"
@@ -40,23 +40,19 @@ services:
         - .env
     restart: unless-stopped
     depends_on:
-      postgis:
-        condition: service_healthy
-      tileserv:
+      martin:
         condition: service_started
     expose:
       - "3000"
 
-  tileserv:
-    image: pramsey/pg_tileserv:latest
-    env_file:
-      - .env
+  martin:
+    image: ghcr.io/maplibre/martin:latest
     restart: unless-stopped
-    depends_on:
-      postgis:
-        condition: service_healthy
+    command: ["/tiles", "-l", "0.0.0.0:3001"]
+    volumes:
+      - ./tiles:/tiles:ro
     expose:
-      - "7800"
+      - "3001"
 
 volumes:
   postgis_data:
