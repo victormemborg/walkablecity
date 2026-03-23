@@ -3,23 +3,56 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.vectorgrid";
 
-const GRADIENT: Record<number, string> = {
-  0.0:  "#1d0024",
-  0.08: "#440154",
-  0.20: "#3b528b",
-  0.38: "#21918c",
-  0.65: "#5ec962",
-  1.0:  "#fde725",
+const MAX_DIST = 10000;
+
+// Taken from: https://gist.github.com/mlocati/7210513
+function colorGradient(score: number): string {
+    const perc = score / MAX_DIST * 100
+	var r, g, b = 0;
+
+	if(perc < 50) {
+		r = 255;
+		g = Math.round(5.1 * perc);
+	}
+	else {
+		g = 255;
+		r = Math.round(510 - 5.10 * perc);
+	}
+	var h = r * 0x10000 + g * 0x100 + b * 0x1;
+	return '#' + ('000000' + h.toString(16)).slice(-6);
+}
+
+const defaultStyle = (properties: Record<string, string>) => {
+    const score = Number(properties.score)
+    const color = colorGradient(score)
+    return {
+        weight: 1,
+        color: color,
+        opacity: 1,
+        fill: true,
+        fillColor: color,
+        fillOpacity: 0.3,
+    };
 };
 
-const stops = Object.keys(GRADIENT).map(Number);
+const vectorTileLayerStyles = new Proxy(
+    {
+        scored_edges_pmtiles_p0: (properties: Record<string, string>) => {
+            const score = Number(properties.score)
+            const color = colorGradient(score)
+            return {
+                weight: 3,   
+                color: color,
+            };
+        },
+    },
+    {
+        get: (style: any, layerName: string) => {
+            return style[layerName] || defaultStyle;
+        }
+    }
+);
 
-function getNearestGradientColor(value: number): string {
-  const nearest = stops.reduce((prev, curr) =>
-    Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
-  );
-  return GRADIENT[nearest];
-}
 
 export default function VectorTileLayer({url, layerName}: {url: string, layerName: string}) {
     const map = useMap();
@@ -28,20 +61,7 @@ export default function VectorTileLayer({url, layerName}: {url: string, layerNam
         const vectorTileOptions = {
             rendererFactory: L.canvas.tile, // L.canvas.tile | L.svg.tile
             interactive: false,
-            vectorTileLayerStyles: {
-                [layerName]: (properties: Record<string, string>) => {
-                    const score = Number(properties.score)
-                    const color = getNearestGradientColor(score / 5)
-                    return {
-                        weight: 1,
-                        color: color,
-                        opacity: 1,
-                        fill: true,
-                        fillColor: color,
-                        fillOpacity: 0.3,
-                    };
-                },
-            },
+            vectorTileLayerStyles: vectorTileLayerStyles,
         };
 
         const vectorGrid = L.vectorGrid.protobuf(url, vectorTileOptions);

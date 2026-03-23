@@ -20,6 +20,6 @@ defs = dg.Definitions(
     ],
     resources={
         "pandana_io_manager": pandana_network_io_manager,
-        "global_config": GlobalConfig(max_distance=1600)
+        "global_config": GlobalConfig(max_distance=10000)
     }
 )
