@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useMap } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { useMapEvent, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.vectorgrid";
 
@@ -7,7 +7,7 @@ const maxDistance = 10000;
 
 // Taken from: https://gist.github.com/mlocati/7210513
 function colorGradient(score: number): string {
-    const perc = score / maxDistance * 100
+    const perc = score / maxDistance * 100;
 	var r, g, b = 0;
 
 	if(perc < 50) {
@@ -23,8 +23,8 @@ function colorGradient(score: number): string {
 }
 
 const defaultStyle = (properties: Record<string, string>) => {
-    const score = Number(properties.score)
-    const color = colorGradient(score)
+    const score = Number(properties.score);
+    const color = colorGradient(score);
     return {
         weight: 1,
         color: color,
@@ -38,8 +38,8 @@ const defaultStyle = (properties: Record<string, string>) => {
 const vectorTileLayerStyles = new Proxy(
     {
         scored_edges_pmtiles_p0: (properties: Record<string, string>) => {
-            const score = Number(properties.score)
-            const color = colorGradient(score)
+            const score = Number(properties.score);
+            const color = colorGradient(score);
             return {
                 weight: 3,   
                 color: color,
@@ -55,6 +55,15 @@ const vectorTileLayerStyles = new Proxy(
 
 export default function VectorTileLayer({url, layerName}: {url: string, layerName: string}) {
     const map = useMap();
+    const [bounds, setBounds] = useState(() => map.getBounds());
+
+    console.log(`Bounds: ${bounds.getSouthWest().lng}, ${bounds.getSouthWest().lat}, ${bounds.getNorthEast().lng}, ${bounds.getNorthEast().lat}`);
+
+    useMapEvents({
+        moveend: () => {
+            setBounds(map.getBounds());
+        },
+    });
 
     useEffect(() => {
         const vectorTileOptions = {

@@ -16,7 +16,7 @@ export default function AccessibilityLayer({baseTileUrl, initialZoom}: {baseTile
 
     useMapEvent("zoomend", e => {
         const zoom = e.target.getZoom();
-        console.log(`Zoom: ${zoom}`)
+        console.log(`Zoom: ${zoom}`);
 
         const newLayer = zoomToLayer(zoom);
         setLayer(newLayer);
