@@ -3,11 +3,11 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.vectorgrid";
 
-const MAX_DIST = 10000;
+const maxDistance = 10000;
 
 // Taken from: https://gist.github.com/mlocati/7210513
 function colorGradient(score: number): string {
-    const perc = score / MAX_DIST * 100
+    const perc = score / maxDistance * 100
 	var r, g, b = 0;
 
 	if(perc < 50) {
@@ -52,7 +52,6 @@ const vectorTileLayerStyles = new Proxy(
         }
     }
 );
-
 
 export default function VectorTileLayer({url, layerName}: {url: string, layerName: string}) {
     const map = useMap();
