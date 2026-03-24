@@ -12,6 +12,11 @@ on:
           - patch
           - minor
           - major
+      benchmark_iterations:
+        description: iterations for each user in the k6 benchmark
+        required: true
+        default: "5"
+        type: string
 
 permissions:
   contents: write
@@ -19,25 +24,42 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
+    outputs:
+      release_benchmark_summary: ${{ steps.export-summary.outputs.release_benchmark_summary }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: 15-minute-cities/pnpm-lock.yaml
+      - name: Create benchmark output directory
+        run: mkdir -p 15-minute-cities/benchmark-results
 
-      - name: Install frontend dependencies
-        working-directory: 15-minute-cities
-        run: pnpm install --frozen-lockfile
+      - name: Run production benchmark
+        env:
+          BASE_URL: https://walkablecity.app
+          K6_ITERATIONS: ${{ inputs.benchmark_iterations }}
+          K6_SUMMARY_MD_PATH: 15-minute-cities/benchmark-results/summary.md
+        run: k6 run 15-minute-cities/perf/walkablecity.k6.js
+
+      - name: Export benchmark summary for release notes
+        id: export-summary
+        shell: bash
+        run: |
+          {
+            echo 'release_benchmark_summary<<EOF'
+            cat 15-minute-cities/benchmark-results/summary.md
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: 15-minute-cities/benchmark-results
+          if-no-files-found: warn
 
   release:
     needs: benchmark
@@ -76,4 +98,7 @@ jobs:
         with:
           tag: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
-          body: "Release ${{ steps.version.outputs.tag }}"
+          body: |
+            Release ${{ steps.version.outputs.tag }}
+
+            ${{ needs.benchmark.outputs.release_benchmark_summary }}
