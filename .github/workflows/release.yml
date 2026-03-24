@@ -1,0 +1,79 @@
+name: Release and benchmark walkablecity.app
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Semantic version increment
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: 15-minute-cities/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: 15-minute-cities
+        run: pnpm install --frozen-lockfile
+
+  release:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Calculate next version
+        id: version
+        run: |
+          git fetch --tags
+
+          latest_tag=$(git tag --list 'v*' --sort=-version:refname | head -n 1)
+          latest_tag=${latest_tag:-v0.0.0}
+
+          version=${latest_tag#v}
+
+          IFS='.' read -r major minor patch <<< "$version"
+
+          case "${{ inputs.release_type }}" in
+            major)
+              major=$((major+1)); minor=0; patch=0;;
+            minor)
+              minor=$((minor+1)); patch=0;;
+            patch)
+              patch=$((patch+1));;
+          esac
+
+          tag="v$major.$minor.$patch"
+
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: "Release ${{ steps.version.outputs.tag }}"
