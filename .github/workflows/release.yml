@@ -12,11 +12,6 @@ on:
           - patch
           - minor
           - major
-      benchmark_iterations:
-        description: iterations for each user in the k6 benchmark
-        required: true
-        default: "20"
-        type: string
 
 permissions:
   contents: write
@@ -24,24 +19,42 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 15-minute-cities
     outputs:
       release_benchmark_summary: ${{ steps.export-summary.outputs.release_benchmark_summary }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up k6
-        uses: grafana/setup-k6-action@v1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: 15-minute-cities/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Create benchmark output directory
-        run: mkdir -p 15-minute-cities/benchmark-results
+        run: mkdir -p benchmark-results
 
       - name: Run production benchmark
         env:
           BASE_URL: https://walkablecity.app
-          K6_ITERATIONS: ${{ inputs.benchmark_iterations }}
-          K6_SUMMARY_MD_PATH: 15-minute-cities/benchmark-results/summary.md
-        run: k6 run 15-minute-cities/perf/walkablecity.k6.js
+          PLAYWRIGHT_SUMMARY_MD_PATH: benchmark-results/summary.md
+        run: pnpm perf:playwright
 
       - name: Export benchmark summary for release notes
         id: export-summary
@@ -49,7 +62,7 @@ jobs:
         run: |
           {
             echo 'release_benchmark_summary<<EOF'
-            cat 15-minute-cities/benchmark-results/summary.md
+            cat benchmark-results/summary.md
             echo EOF
           } >> "$GITHUB_OUTPUT"
 

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "perf:playwright": "node perf/playwright.js"
   },
   "dependencies": {
     "@types/leaflet.vectorgrid": "^1.3.10",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "playwright": "^1.54.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
