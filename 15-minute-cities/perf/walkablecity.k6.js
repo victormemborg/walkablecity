@@ -22,8 +22,9 @@ const scenarios = cities.flatMap((city) =>
 );
 
 export const options = {
-  vus: 1,
-  iterations: Number(__ENV.K6_ITERATIONS || 5),
+  vus: 1, // VU = virtual user. Will be good if we want to simulate multiple users concurrently, but for now we just want performance benchmarks of individual requests
+  iterations: Number(__ENV.K6_ITERATIONS || 20), // each scenario will be run this many times (more reliable results with more iterations, but takes longer)
+  // maps each scenario to its own metric, so we can see them separately in the summary
   thresholds: Object.fromEntries(
     scenarios.map(({ id }) => [`http_req_duration{name:${id}}`, []])
   ),
@@ -43,18 +44,18 @@ export function handleSummary(data) {
   const { avg, "p(95)": p95 } = data.metrics.http_req_duration.values;
   const total = data.metrics.http_reqs.values.count;
 
-  const header = "| Scenario | Zoom | Avg (ms) | p95 (ms) |";
-  const divider = "|----------|------|----------|----------|";
+  const header = "| Scenario | Avg (ms) | p95 (ms) |";
+  const divider = "|----------|----------|----------|";
   const rows = scenarios
-    .map(({ id, zoom }) => {
+    .map(({ id }) => {
       const v = data.metrics[`http_req_duration{name:${id}}`]?.values;
-      return v ? `| ${id} | ${zoom} | ${v.avg.toFixed(1)} | ${v["p(95)"].toFixed(1)} |` : null;
+      return v ? `| ${id} | ${v.avg.toFixed(1)} | ${v["p(95)"].toFixed(1)} |` : null;
     })
     .filter(Boolean)
     .join("\n");
 
   const md = `
-## k6 benchmark — ${baseUrl}
+## k6 benchmark
 
 ${header}
 ${divider}
