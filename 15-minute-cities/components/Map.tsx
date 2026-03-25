@@ -7,14 +7,13 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import { MapContainer, TileLayer } from "react-leaflet";
 import AccessibilityLayer from "./AccessibilityLayer";
 
-export default function Map() {
-  const initialZoom = 11;
+export default function Map({ center, zoom }: { center: [number, number]; zoom: number }) {
   const baseTileUrl = "/tiles/";
 
   return (
       <MapContainer
-        center={[55.6761, 12.5683]}
-        zoom={initialZoom}
+        center={center}
+        zoom={zoom}
         scrollWheelZoom={true}
         style={{ height: "100%", width: "100%" }}
         preferCanvas={true}
@@ -25,7 +24,7 @@ export default function Map() {
         />
         <AccessibilityLayer 
           baseTileUrl={baseTileUrl}
-          initialZoom={initialZoom}
+          initialZoom={zoom}
         />
       </MapContainer>
   );
