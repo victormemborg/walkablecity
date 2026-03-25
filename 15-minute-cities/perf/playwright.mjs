@@ -3,9 +3,9 @@
 * The rewrite has mainly been done by recording tests and using AI, therefore there might be some rough edges.
 */
 
-const fs = require("fs");
-const path = require("path");
-const { chromium } = require("playwright");
+import fs from "fs";
+import path from "path";
+import { chromium } from "playwright";
 
 const baseUrl = process.env.BASE_URL || "https://walkablecity.app";
 const summaryPath = process.env.PLAYWRIGHT_SUMMARY_MD_PATH || "benchmark-results/summary.md";
