@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
-import L from "leaflet";
+import L, { bounds } from "leaflet";
 import "leaflet.vectorgrid";
 
 type Range = [min: number, max: number];
@@ -22,44 +22,53 @@ async function fetchScoreRange(bounds: L.LatLngBounds, table: string): Promise<R
     return [content.min, content.max];
 }
 
-// Taken from: https://gist.github.com/mlocati/7210513
-function colorGradient(score: number, scoreRange: Range): string {
-    const [min, max] = scoreRange;
-    const perc = (score - min) / (max - min) * 100;
-
-    let r, g;
-    const b = 0;
-    if (perc < 50) {
-        r = 255;
-        g = Math.round(5.1 * perc);
-    } else {
-        g = 255;
-        r = Math.round(510 - 5.1 * perc);
-    }
-    const h = r * 0x10000 + g * 0x100 + b;
-    return "#" + ("000000" + h.toString(16)).slice(-6);
-}
-
 export default function VectorTileLayer({ url, layerName }: { url: string; layerName: string }) {
     const map = useMap();
-    const scoreRangeRef = useRef<Range>([0, 10000]);
+    const scoreRangeRef = useRef<Range>([0, BASE_MAX_SCORE]);
     const vectorGridRef = useRef<L.VectorGrid.Protobuf | null>(null);
 
-    // Style functions close over maxScoreRef — always read the latest value
-    const makeStyle = useCallback((properties: Record<string, string>, weight: number) => {
-        const score = Number(properties.score);
-        const color = colorGradient(score, scoreRangeRef.current);
-        return { weight, color, opacity: 1, fill: true, fillColor: color, fillOpacity: 0.3 };
-    }, []);
+    // Taken from: https://gist.github.com/mlocati/7210513
+    const colorGradient = (score: number) => {
+        const [min, max] = scoreRangeRef.current;
+        const perc = (score - min) / (max - min) * 100;
+
+        let r, g;
+        const b = 0;
+        if (perc < 50) {
+            r = 255;
+            g = Math.round(5.1 * perc);
+        } else {
+            g = 255;
+            r = Math.round(510 - 5.1 * perc);
+        }
+        const h = r * 0x10000 + g * 0x100 + b;
+        return "#" + ("000000" + h.toString(16)).slice(-6);
+    }
 
     const vectorTileLayerStyles = new Proxy(
         {
-            scored_edges_pmtiles_p0: (properties: Record<string, string>) =>
-                makeStyle(properties, 3),
+            // Specific styles:
+            scored_edges_pmtiles_p0: (properties: Record<string, string>) => {
+                const color = colorGradient(Number(properties.score))
+                return {
+                    weight: 3,   
+                    color: color,
+                };
+            }
         },
         {
-            get: (style: any, name: string) =>
-                style[name] ?? ((props: Record<string, string>) => makeStyle(props, 1)),
+            get: (style: any, name: string) => style[name] ?? ((properties: Record<string, string>) => {
+                // Default style:
+                const color = colorGradient(Number(properties.score));
+                return {
+                    weight: 1,
+                    color: color,
+                    opacity: 1,
+                    fill: true,
+                    fillColor: color,
+                    fillOpacity: 0.3,
+                };
+            }),
         }
     );
 
@@ -87,8 +96,10 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
             interactive: false,
             vectorTileLayerStyles: vectorTileLayerStyles,
         });
+
         vectorGrid.addTo(map);
         vectorGridRef.current = vectorGrid;
+        
         return () => {
             map.removeLayer(vectorGrid);
             vectorGridRef.current = null;
