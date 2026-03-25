@@ -6,7 +6,13 @@ import "leaflet.vectorgrid";
 type Range = [min: number, max: number];
 const BASE_MAX_SCORE = 10000;
 
-async function fetchScoreRange(bounds: L.LatLngBounds, table: string): Promise<Range> {
+function withinMargin(a: Range, b: Range, margin: number): boolean {
+    const [minA, maxA] = a;
+    const [minB, maxB] = b;
+    return Math.abs(minA - minB) < margin && Math.abs(maxA - maxB) < margin;
+}
+
+async function fetchScoreRange(bounds: L.LatLngBounds, table: string, signal: AbortSignal): Promise<Range> {
     const params = new URLSearchParams({
         minlat: String(bounds.getSouth()),
         minlon: String(bounds.getWest()),
@@ -16,7 +22,7 @@ async function fetchScoreRange(bounds: L.LatLngBounds, table: string): Promise<R
     });
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    const response = await fetch(`${API_URL}/bbox?${params.toString()}`);
+    const response = await fetch(`${API_URL}/bbox?${params.toString()}`, { signal });
     const content: {min: number, max: number} = await response.json();
 
     return [content.min, content.max];
@@ -53,6 +59,8 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
     const map = useMap();
     const scoreRangeRef = useRef<Range>([0, BASE_MAX_SCORE]);
     const vectorGridRef = useRef<L.VectorGrid.Protobuf | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     // Modified from: https://gist.github.com/mlocati/7210513
     const colorGradient = (score: number) => {
@@ -79,24 +87,36 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
         return "#" + ("000000" + h.toString(16)).slice(-6);
     }
 
-
     // Fetch score range for current viewport and redraw
     const refreshScoreRange = useCallback(async () => {
-        const bounds = map.getBounds();
-        const tableName = layerName.replace("pmtiles", "postgis");
-
-        const scoreRange = await fetchScoreRange(bounds, tableName);
-        console.log(scoreRange);
-
-        if (scoreRange && scoreRange !== scoreRangeRef.current) {
-            scoreRangeRef.current = scoreRange;
-            vectorGridRef.current?.redraw();
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
         }
+
+        debounceTimerRef.current = setTimeout(async () => {
+            abortControllerRef.current?.abort();
+            abortControllerRef.current = new AbortController();
+
+            const bounds = map.getBounds();
+            const tableName = layerName.replace("pmtiles", "postgis");
+            try {
+                const updatedRange = await fetchScoreRange(bounds, tableName, abortControllerRef.current.signal);
+                console.log(updatedRange);
+
+                if (updatedRange && !withinMargin(updatedRange, scoreRangeRef.current, 300)) {
+                    scoreRangeRef.current = updatedRange;
+                    vectorGridRef.current?.redraw();
+                }
+            } catch (err) {
+                if (err instanceof DOMException && err.name === "AbortError") return;
+            }
+        }, 300);
     }, [map]);
 
     // Mount/unmount the layer once
     useEffect(() => {
-        (L.DomEvent as any).fakeStop = (L.DomEvent as any).fakeStop ?? (() => {});
+        (L.DomEvent as any).fakeStop = (L.DomEvent as any).fakeStop ?? (() => {}); // For debugging
+
         const vectorGrid = L.vectorGrid.protobuf(url, {
             rendererFactory: L.canvas.tile,
             interactive: true,
@@ -116,7 +136,12 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
         vectorGrid.addTo(map);
         vectorGridRef.current = vectorGrid;
         
+        // Fetch initial range
+        refreshScoreRange();
+        
         return () => {
+            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+            abortControllerRef.current?.abort();
             map.removeLayer(vectorGrid);
             vectorGridRef.current = null;
         };
