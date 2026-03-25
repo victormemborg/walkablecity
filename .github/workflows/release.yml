@@ -15,7 +15,7 @@ on:
       benchmark_iterations:
         description: iterations for each user in the k6 benchmark
         required: true
-        default: "5"
+        default: "20"
         type: string
 
 permissions:

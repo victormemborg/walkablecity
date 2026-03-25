@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const LazyMap = dynamic(() => import("@/components/Map"), {
   ssr: false,
@@ -18,10 +19,13 @@ function Map() {
   return <LazyMap center={[lat, lon]} zoom={zoom} />;
 }
 
+// NOTE: Suspense is required, otherwise we can't build the app. 
 export default function Home() {
   return (
     <main style={{ height: "100vh", margin: 0 }}>
-      <Map />
+      <Suspense fallback={<p>Loading...</p>}> 
+        <Map />
+      </Suspense>
     </main>
   );
 }
