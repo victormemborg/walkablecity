@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
-import L, { bounds } from "leaflet";
+import L from "leaflet";
 import "leaflet.vectorgrid";
 
 type Range = [min: number, max: number];
@@ -22,6 +22,33 @@ async function fetchScoreRange(bounds: L.LatLngBounds, table: string): Promise<R
     return [content.min, content.max];
 }
 
+const vectorTileLayerStyles = (colorFn: (score: number) => string) => new Proxy(
+    {
+        // Specific styles:
+        scored_edges_pmtiles_p0: (properties: Record<string, string>) => {
+            const color = colorFn(Number(properties.score))
+            return {
+                weight: 3,   
+                color: color,
+            };
+        }
+    },
+    {
+        get: (style: any, name: string) => style[name] ?? ((properties: Record<string, string>) => {
+            // Default style:
+            const color = colorFn(Number(properties.score));
+            return {
+                weight: 1,
+                color: color,
+                opacity: 1,
+                fill: true,
+                fillColor: color,
+                fillOpacity: 0.3,
+            };
+        }),
+    }
+);
+
 export default function VectorTileLayer({ url, layerName }: { url: string; layerName: string }) {
     const map = useMap();
     const scoreRangeRef = useRef<Range>([0, BASE_MAX_SCORE]);
@@ -30,62 +57,37 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
     // Taken from: https://gist.github.com/mlocati/7210513
     const colorGradient = (score: number) => {
         const [min, max] = scoreRangeRef.current;
-        const perc = (score - min) / (max - min) * 100;
+
+        const actual = score / BASE_MAX_SCORE * 100;
+        const normalized = (score - min) / (max - min) * 100;
+        const effective = (actual + normalized*2) / 3
 
         let r, g;
         const b = 0;
-        if (perc < 50) {
+
+        if (effective < 50) {
             r = 255;
-            g = Math.round(5.1 * perc);
+            g = Math.round(5.1 * effective);
         } else {
             g = 255;
-            r = Math.round(510 - 5.1 * perc);
+            r = Math.round(510 - 5.1 * effective);
         }
         const h = r * 0x10000 + g * 0x100 + b;
         return "#" + ("000000" + h.toString(16)).slice(-6);
     }
 
-    const vectorTileLayerStyles = new Proxy(
-        {
-            // Specific styles:
-            scored_edges_pmtiles_p0: (properties: Record<string, string>) => {
-                const color = colorGradient(Number(properties.score))
-                return {
-                    weight: 3,   
-                    color: color,
-                };
-            }
-        },
-        {
-            get: (style: any, name: string) => style[name] ?? ((properties: Record<string, string>) => {
-                // Default style:
-                const color = colorGradient(Number(properties.score));
-                return {
-                    weight: 1,
-                    color: color,
-                    opacity: 1,
-                    fill: true,
-                    fillColor: color,
-                    fillOpacity: 0.3,
-                };
-            }),
-        }
-    );
 
-    // Fetch max score for current viewport and redraw
+    // Fetch score range for current viewport and redraw
     const refreshScoreRange = useCallback(async () => {
         const bounds = map.getBounds();
         const tableName = layerName.replace("pmtiles", "postgis");
-        try {
-            const scoreRange = await fetchScoreRange(bounds, tableName);
-            console.log(scoreRange);
-            if (scoreRange && scoreRange !== scoreRangeRef.current) {
-                scoreRangeRef.current = scoreRange;
-                // Imperatively redraw — no React re-render needed
-                vectorGridRef.current?.redraw();
-            }
-        } catch (err) {
-            console.error("Failed to fetch max score", err);
+
+        const scoreRange = await fetchScoreRange(bounds, tableName);
+        console.log(scoreRange);
+
+        if (scoreRange && scoreRange !== scoreRangeRef.current) {
+            scoreRangeRef.current = scoreRange;
+            vectorGridRef.current?.redraw();
         }
     }, [map]);
 
@@ -94,7 +96,7 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
         const vectorGrid = L.vectorGrid.protobuf(url, {
             rendererFactory: L.canvas.tile,
             interactive: false,
-            vectorTileLayerStyles: vectorTileLayerStyles,
+            vectorTileLayerStyles: vectorTileLayerStyles(colorGradient),
         });
 
         vectorGrid.addTo(map);
