@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.vectorgrid";
+import { json } from "stream/consumers";
 
 type Range = [min: number, max: number];
 const BASE_MAX_SCORE = 10000;
@@ -14,10 +15,10 @@ function withinMargin(a: Range, b: Range, margin: number): boolean {
 
 async function fetchScoreRange(bounds: L.LatLngBounds, table: string, signal: AbortSignal): Promise<Range> {
     const params = new URLSearchParams({
-        minlat: String(bounds.getSouth()),
-        minlon: String(bounds.getWest()),
-        maxlat: String(bounds.getNorth()),
-        maxlon: String(bounds.getEast()),
+        minlat: String(bounds.getSouthWest().lat),
+        minlon: String(bounds.getSouthWest().lng),
+        maxlat: String(bounds.getNorthEast().lat),
+        maxlon: String(bounds.getNorthEast().lng),
         table: table,
     });
 
@@ -65,13 +66,10 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
     // Modified from: https://gist.github.com/mlocati/7210513
     const colorGradient = (score: number) => {
         let [min, max] = scoreRangeRef.current;
-        // TODO: There is some discrepancy between the max reported by postgis, and the actual max.
-        // If actual max is higher than (this) reported max we get weird visual artifacts (black spots)
-        max = max + 500 
 
         const actual = score / BASE_MAX_SCORE * 100;
-        const normalized = (score - min) / (max - min) * 100;
-        const effective = (actual*1.5 + normalized) / 2.5
+        const adjusted = (score - min) / (max - min) * 100;
+        const effective = (actual + adjusted) / 2
 
         let r, g;
         const b = 0;
@@ -111,7 +109,7 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
                 if (err instanceof DOMException && err.name === "AbortError") return;
             }
         }, 300);
-    }, [map]);
+    }, [map, layerName]);
 
     // Mount/unmount the layer once
     useEffect(() => {
@@ -125,7 +123,6 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
         
         // For debugging
         vectorGrid.on("click", e => {
-            console.log(e)
             const props = e.layer.properties;
             const latlng = e.latlng;
 
