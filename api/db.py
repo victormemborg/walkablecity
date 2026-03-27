@@ -1,17 +1,13 @@
 import os
+import asyncpg
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
+pool: asyncpg.Pool = None
 
-engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
+async def init_pool():
+    global pool
+    pool = await asyncpg.create_pool(os.environ["DATABASE_URL"], min_size=5, max_size=20)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_pool():
+    return pool

@@ -60,7 +60,7 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
     const colorGradient = (score: number) => {
         let [min, max] = scoreRangeRef.current;
 
-        // Convert score to a value between 0 and 100. TODO: Look into bounding score between 0-100
+        // Convert score to a value between 0 and 100. TODO: Look into pre-normalizing the score
         const actual = score / BASE_MAX_SCORE * 100;
         const viewportAdjusted = (score - min) / (max - min) * 100;
         // Desync between tile renders (which calls this function) and 'scoreRangeRef' updates 
