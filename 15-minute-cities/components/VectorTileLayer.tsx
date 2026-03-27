@@ -2,18 +2,11 @@ import { useEffect, useRef, useCallback } from "react";
 import { useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.vectorgrid";
-import { json } from "stream/consumers";
 
-type Range = [min: number, max: number];
+type ScoreRange = [min: number, max: number];
 const BASE_MAX_SCORE = 10000;
 
-function withinMargin(a: Range, b: Range, margin: number): boolean {
-    const [minA, maxA] = a;
-    const [minB, maxB] = b;
-    return Math.abs((maxA - minA) - (maxB - minB)) < margin;
-}
-
-async function fetchScoreRange(bounds: L.LatLngBounds, table: string, signal: AbortSignal): Promise<Range> {
+async function fetchScoreRange(bounds: L.LatLngBounds, table: string, signal: AbortSignal): Promise<ScoreRange> {
     const params = new URLSearchParams({
         minlat: String(bounds.getSouthWest().lat),
         minlon: String(bounds.getSouthWest().lng),
@@ -58,9 +51,9 @@ const vectorTileLayerStyles = (colorFn: (score: number) => string) => new Proxy(
 
 export default function VectorTileLayer({ url, layerName }: { url: string; layerName: string }) {
     const map = useMap();
-    const scoreRangeRef = useRef<Range>([0, BASE_MAX_SCORE]);
+    const scoreRangeRef = useRef<ScoreRange>([0, BASE_MAX_SCORE]);
     const vectorGridRef = useRef<L.VectorGrid.Protobuf | null>(null);
-    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     // Modified from: https://gist.github.com/mlocati/7210513
@@ -70,7 +63,7 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
         // Convert score to a value between 0 and 100. TODO: Look into bounding score between 0-100
         const actual = score / BASE_MAX_SCORE * 100;
         const viewportAdjusted = (score - min) / (max - min) * 100;
-        // Desync between tile-renders (which calls this function) and 'scoreRangeRef' updates 
+        // Desync between tile renders (which calls this function) and 'scoreRangeRef' updates 
         // may cause 'viewportAdjusted' to exceed 100 although the math implies it should be 
         // impossible. This usually happens when panning large distances without letting go of 
         // mouse1. TODO: Look into enforcing synchronization.
@@ -101,16 +94,15 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
             abortControllerRef.current?.abort();
             abortControllerRef.current = new AbortController();
 
-            const bounds = map.getBounds();
-            const tableName = layerName.replace("pmtiles", "postgis");
             try {
+                const bounds = map.getBounds();
+                const tableName = layerName.replace("pmtiles", "postgis");
+
                 const updatedRange = await fetchScoreRange(bounds, tableName, abortControllerRef.current.signal);
                 console.log(`Visible score range: ${updatedRange}`);
 
-                if (updatedRange && !withinMargin(updatedRange, scoreRangeRef.current, 300)) {
-                    scoreRangeRef.current = updatedRange;
-                    vectorGridRef.current?.redraw();
-                }
+                scoreRangeRef.current = updatedRange;
+                vectorGridRef.current?.redraw();
             } catch (err) {
                 if (err instanceof DOMException && err.name === "AbortError") return;
             }
