@@ -10,7 +10,7 @@ const BASE_MAX_SCORE = 10000;
 function withinMargin(a: Range, b: Range, margin: number): boolean {
     const [minA, maxA] = a;
     const [minB, maxB] = b;
-    return Math.abs(minA - minB) < margin && Math.abs(maxA - maxB) < margin;
+    return Math.abs((maxA - minA) - (maxB - minB)) < margin;
 }
 
 async function fetchScoreRange(bounds: L.LatLngBounds, table: string, signal: AbortSignal): Promise<Range> {
@@ -67,9 +67,15 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
     const colorGradient = (score: number) => {
         let [min, max] = scoreRangeRef.current;
 
+        // Convert score to a value between 0 and 100. TODO: Look into bounding score between 0-100
         const actual = score / BASE_MAX_SCORE * 100;
-        const adjusted = (score - min) / (max - min) * 100;
-        const effective = (actual + adjusted) / 2
+        const viewportAdjusted = (score - min) / (max - min) * 100;
+        // Desync between tile-renders (which calls this function) and 'scoreRangeRef' updates 
+        // may cause 'viewportAdjusted' to exceed 100 although the math implies it should be 
+        // impossible. This usually happens when panning large distances without letting go of 
+        // mouse1. TODO: Look into enforcing synchronization.
+        const capped = viewportAdjusted <= 100 ? viewportAdjusted : 100;
+        const effective = (actual + capped) / 2;
 
         let r, g;
         const b = 0;
@@ -99,7 +105,7 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
             const tableName = layerName.replace("pmtiles", "postgis");
             try {
                 const updatedRange = await fetchScoreRange(bounds, tableName, abortControllerRef.current.signal);
-                console.log(updatedRange);
+                console.log(`Visible score range: ${updatedRange}`);
 
                 if (updatedRange && !withinMargin(updatedRange, scoreRangeRef.current, 300)) {
                     scoreRangeRef.current = updatedRange;
@@ -113,23 +119,12 @@ export default function VectorTileLayer({ url, layerName }: { url: string; layer
 
     // Mount/unmount the layer once
     useEffect(() => {
-        (L.DomEvent as any).fakeStop = (L.DomEvent as any).fakeStop ?? (() => {}); // For debugging
-
         const vectorGrid = L.vectorGrid.protobuf(url, {
             rendererFactory: L.canvas.tile,
-            interactive: true,
+            interactive: false,
             vectorTileLayerStyles: vectorTileLayerStyles(colorGradient),
         });
         
-        // For debugging
-        vectorGrid.on("click", e => {
-            const props = e.layer.properties;
-            const latlng = e.latlng;
-
-            const content = `<strong>Score:</strong> ${props.score || "N/A"}` 
-            L.popup().setLatLng(latlng).setContent(content).openOn(map);
-        });
-
         vectorGrid.addTo(map);
         vectorGridRef.current = vectorGrid;
         
