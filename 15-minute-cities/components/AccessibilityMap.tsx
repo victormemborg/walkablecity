@@ -1,19 +1,34 @@
 "use client";
 
-import Map, { Layer, Source, ViewStateChangeEvent} from "react-map-gl/maplibre";
-import type { LineLayerSpecification, VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
+import Map, { Layer, Source, useMap, ViewStateChangeEvent} from "react-map-gl/maplibre";
+import type { VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
 import "maplibre-gl/dist/maplibre-gl.css";
 
+type ScoreRange = [min: number, max: number];
 type TileLayer = {
 	id: string;
 	maxZoom: number;
 	style: Pick<LayerSpecification, "type" | "paint">;
 };
 
+const DEFAULT_SCORE_RANGE = [0, 10000] as ScoreRange;
+
+// Returns MapLibre expression syntax: https://maplibre.org/maplibre-style-spec/expressions/
+function makeScoreToColorInterpolation(range: ScoreRange = DEFAULT_SCORE_RANGE) {
+	const [min, max] = range;
+	return [
+		"interpolate", ["linear"],
+		["get", "score"],
+		min, "#d73027",
+		(min + max) / 2, "#ffffbf",
+		max, "#1a9850"
+	]
+}
+
 const GRID_STYLE = {
 	type: "fill",
 	paint: {
-		"fill-color": "#2c0d9b",
+		"fill-color": makeScoreToColorInterpolation(),
 		"fill-opacity": 0.5
 	}
 } as Pick<LayerSpecification, "type" | "paint">;
@@ -21,7 +36,7 @@ const GRID_STYLE = {
 const EDGE_STYLE = {
 	type: "line",
 	paint: {
-		"line-color": "#2c0d9b",
+		"line-color": makeScoreToColorInterpolation(),
 		"line-width": 2
 	}
 } as Pick<LayerSpecification, "type" | "paint">;
@@ -61,13 +76,34 @@ function toVectorSource(tileLayer: TileLayer) {
 		</Source>
 	);
 }
+/*
+function useDynamicStyling() {
+	const {current: map} = useMap();
+	if (!map) return;
+
+	const [min, max] = map.queryRenderedFeatures()
+		.map(f => f.properties.score as number)
+		.reduce(
+			(prev, curr) => [prev[0] < curr ? prev[0] : curr, prev[1] < curr ? curr : prev[1]], 
+			[Number.MAX_VALUE, Number.MIN_VALUE]
+		);
+
+	map.getLayer("dada")?.setPaintProperty
+
+	map.getLayer("dadada")?.setPaintProperty('your-layer-id', 'fill-color', [
+		'interpolate',
+		['linear'],
+		['get', 'score'],
+		min, '#0000ff',
+		max, '#ff0000'
+	]);
+
+}
+*/
 
 export default function AccessibilityMap() {
-	const onZoomEnd = (e: ViewStateChangeEvent) => {
-		const zoom = e.target.getZoom();
-		console.log(`Zoom: ${zoom}`);
-	};
-	
+	//useDynamicStyling()
+
 	return (
 		<Map 
 		initialViewState={{
@@ -77,7 +113,6 @@ export default function AccessibilityMap() {
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/bright"
 		maxZoom={18}
-		onZoomEnd={onZoomEnd}
 		>
 			{TILE_LAYERS.map(toVectorSource)}
 		</Map>
