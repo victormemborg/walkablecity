@@ -79,24 +79,21 @@ function toVectorSource(tileLayer: TileLayer) {
 	);
 }
 
-function refreshScoreRange(e: MapLibreEvent) {
-	const map = e.target;
+function refreshScoreRange(event: MapLibreEvent) {
+	const map = event.target;
 	const layer = TILE_LAYERS.find(l => l.maxZoom >= map.getZoom());
 	if (!layer) throw new AssertionError({ message: "Invalid zoom level" });
 
-	const range = map.queryRenderedFeatures().map(f => f.properties.score as number).reduce(
-		(prev, curr) => [prev[0] < curr ? prev[0] : curr, prev[1] < curr ? curr : prev[1]], 
-		[Number.MAX_VALUE, Number.MIN_VALUE]
-	) as ScoreRange;
-
-	const [min, max] = range;
-	console.log(`min: ${min}, max: ${max}`);
-
-	const style = map.getLayer(`${layer.id}-style`);
-	if (!style) throw new AssertionError({ message: "Invalid layer" });
+	const styleId = `${layer.id}-style`;
+	const range = map.queryRenderedFeatures(undefined, { layers: [styleId]})
+		.map(f => f.properties.score as number)
+		.reduce(
+			(prev, curr) => [Math.min(prev[0], curr), Math.max(prev[1], curr)], 
+			[Infinity, -Infinity]
+		) as ScoreRange;
 
 	const property = `${layer.style.type}-color`;
-	style.setPaintProperty(property, makeScoreToColorInterpolation());
+	map.setPaintProperty(styleId, property, makeScoreToColorInterpolation(range));
 }
 
 export default function AccessibilityMap() {
@@ -109,7 +106,7 @@ export default function AccessibilityMap() {
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/bright"
 		maxZoom={18}
-		onIdle={refreshScoreRange}
+		onMoveEnd={refreshScoreRange}
 		>
 			{TILE_LAYERS.map(toVectorSource)}
 		</Map>
