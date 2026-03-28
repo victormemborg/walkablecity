@@ -12,16 +12,20 @@ type SourceDefinition = {
 	style: Pick<LayerSpecification, "type" | "paint">;
 };
 
-const DEFAULT_SCORE_RANGE = [0, 10000] as ScoreRange;
+const MAX_SCORE_RANGE = [0, 10000] as ScoreRange;
 
 // Returns MapLibre expression syntax: https://maplibre.org/maplibre-style-spec/expressions/
-function makeScoreToColorInterpolation(range: ScoreRange = DEFAULT_SCORE_RANGE) {
-	const [min, max] = range;
+function colorInterpolate(range: ScoreRange) {
+	const [minA, maxA] = range;
+	const [minB, maxB] = MAX_SCORE_RANGE;
+	const min = (minA*2 + minB) / 3;
+	const max = (maxA*2 + maxB) / 3;
+
 	return [
 		"interpolate", ["linear"],
 		["get", "score"],
 		min, "#d73027",
-		(min + max) / 2, "#ffffbf",
+		(min + max) / 2, "#f3f37d",
 		max, "#1a9850"
 	]
 }
@@ -29,7 +33,7 @@ function makeScoreToColorInterpolation(range: ScoreRange = DEFAULT_SCORE_RANGE) 
 const GRID_STYLE = {
 	type: "fill",
 	paint: {
-		"fill-color": makeScoreToColorInterpolation(),
+		"fill-color": colorInterpolate(MAX_SCORE_RANGE),
 		"fill-opacity": 0.5
 	}
 } as Pick<LayerSpecification, "type" | "paint">;
@@ -37,7 +41,7 @@ const GRID_STYLE = {
 const EDGE_STYLE = {
 	type: "line",
 	paint: {
-		"line-color": makeScoreToColorInterpolation(),
+		"line-color": colorInterpolate(MAX_SCORE_RANGE),
 		"line-width": 2
 	}
 } as Pick<LayerSpecification, "type" | "paint">;
@@ -93,7 +97,7 @@ function refreshScoreRange(event: MapLibreEvent) {
 		) as ScoreRange;
 
 	const property = `${sourceDef.style.type}-color`;
-	map.setPaintProperty(layerId, property, makeScoreToColorInterpolation(range));
+	map.setPaintProperty(layerId, property, colorInterpolate(range));
 }
 
 export default function AccessibilityMap() {
