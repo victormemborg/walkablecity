@@ -1,32 +1,49 @@
-import { useState } from "react";
-import { useMapEvent } from "react-leaflet";
-import VectorTileLayer from "./VectorTileLayer";
-import { AssertionError } from "assert";
+import { VectorSourceSpecification, FillLayerSpecification } from "maplibre-gl";
+import { Source, Layer } from "react-map-gl/maplibre";
 
-function zoomToLayer(zoom: number): string {
-    if (zoom <= 8) return "scored_grids_pmtiles_p5";
-    if (zoom <= 12) return "scored_grids_pmtiles_p6";
-    if (zoom <= 14) return "scored_grids_pmtiles_p7";
-    if (zoom <= 18) return "scored_edges_pmtiles_p0";
-    throw new AssertionError({message: "unhandled zoom level"});
+const gridsP6Source: VectorSourceSpecification = {
+	type: "vector" as const,
+	tiles: ["http://localhost:3001/scored_grids_pmtiles_p6/{z}/{x}/{y}.pbf"],
+	minzoom: 0,
+	maxzoom: 9
 };
 
-export default function AccessibilityLayer({baseTileUrl, initialZoom}: {baseTileUrl: string, initialZoom: number}) {
-    const [layer, setLayer] = useState(() => zoomToLayer(initialZoom));
+const gridsP6Style: FillLayerSpecification = {
+	id: "grids-p6-style",
+	type: "fill",
+	source: "grids-p6-source",
+	"source-layer": "scored_grids_pmtiles_p6", 
+	paint: {
+		"fill-color": "#9b0d0d",
+		"fill-opacity": 0.5
+	},
+	minzoom: 0,
+	maxzoom: 10
+};
 
-    useMapEvent("zoomend", e => {
-        const zoom = e.target.getZoom();
-        console.log(`Zoom: ${zoom}`);
+export default function AccessibilityLayer({tileUrl, layerId}: {tileUrl: string, layerId: string}) {
+    const sourceId = `test-source`;
+    const styleId = `test-style`;
 
-        const newLayer = zoomToLayer(zoom);
-        setLayer(newLayer);
-    });
+    const source: VectorSourceSpecification = {
+        type: "vector" as const,
+        tiles: [tileUrl],
+    }
 
-    const url = `${baseTileUrl}${layer}/{z}/{x}/{y}`;
+    const style: FillLayerSpecification = {
+        id: styleId,
+        type: "fill",
+        source: sourceId,
+        "source-layer": layerId, 
+        paint: {
+            "fill-color": "#9b0d0d",
+            "fill-opacity": 0.5
+        },
+    }
+
     return (
-        <VectorTileLayer
-          url={url}
-          layerName={layer}
-        />
+        <Source id={sourceId} {...source}>
+            <Layer {...style}/>
+        </Source>
     )
 }

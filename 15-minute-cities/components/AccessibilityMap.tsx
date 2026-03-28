@@ -1,8 +1,11 @@
 "use client";
 
-import Map, { Layer, Source, useMap} from "react-map-gl/maplibre";
+import { useState } from "react";
+import Map, { Layer, Source, ViewStateChangeEvent} from "react-map-gl/maplibre";
 import type { FillLayerSpecification, VectorSourceSpecification } from 'maplibre-gl';
 import "maplibre-gl/dist/maplibre-gl.css";
+import { AssertionError } from "assert";
+import AccessibilityLayer from "./AccessibilityLayer";
 
 const gridsP6Source: VectorSourceSpecification = {
 	type: "vector" as const,
@@ -44,22 +47,39 @@ const gridsP7Style: FillLayerSpecification = {
 	maxzoom: 18
 };
 
+function zoomToLayerId(zoom: number): string {
+    if (zoom <= 8) return "scored_grids_pmtiles_p5";
+    if (zoom <= 12) return "scored_grids_pmtiles_p6";
+    if (zoom <= 14) return "scored_grids_pmtiles_p7";
+    if (zoom <= 18) return "scored_edges_pmtiles_p0";
+    throw new AssertionError({message: "unhandled zoom level"});
+};
+
 export default function AccessibilityMap() {
+	const initialZoom = 11;
+	const [layerId, setLayerId] = useState(zoomToLayerId(initialZoom));
+	const tileUrl = `http://localhost:3001/${layerId}/{z}/{x}/{y}.pbf`;
+
+	const onZoomEnd = (e: ViewStateChangeEvent) => {
+		const zoom = e.target.getZoom();
+		console.log(`Zoom: ${zoom}`);
+		setLayerId(zoomToLayerId(zoom));
+	};
+
 	return (
 		<Map 
 			initialViewState={{
 				longitude: 12.5683,
 				latitude: 55.6761,
-				zoom: 11
+				zoom: initialZoom
 			}}
 			mapStyle="https://tiles.openfreemap.org/styles/bright"
+			onZoomEnd={onZoomEnd}
 		>
-			<Source id="grids-p6-source" {...gridsP6Source}>
-				<Layer {...gridsP6Style} />
-			</Source>
-			<Source id="grids-p7-source" {...gridsP7Source}>
-				<Layer {...gridsP7Style} />
-			</Source>
+			<AccessibilityLayer 
+				tileUrl={tileUrl}
+				layerId={layerId}
+			/>
 		</Map>
 	);
 }
