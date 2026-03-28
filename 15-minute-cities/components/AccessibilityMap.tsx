@@ -1,8 +1,9 @@
 "use client";
 
 import Map, { Layer, Source, useMap, ViewStateChangeEvent} from "react-map-gl/maplibre";
-import type { VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
+import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
 import "maplibre-gl/dist/maplibre-gl.css";
+import { AssertionError } from "assert";
 
 type ScoreRange = [min: number, max: number];
 type TileLayer = {
@@ -41,6 +42,7 @@ const EDGE_STYLE = {
 	}
 } as Pick<LayerSpecification, "type" | "paint">;
 
+// Must be ordered by 'maxZoom' (smallest first)
 const TILE_LAYERS: TileLayer[] = [
 	{id: "scored_grids_pmtiles_p5", maxZoom: 8, style: GRID_STYLE},
 	{id: "scored_grids_pmtiles_p6", maxZoom: 12, style: GRID_STYLE},
@@ -76,34 +78,28 @@ function toVectorSource(tileLayer: TileLayer) {
 		</Source>
 	);
 }
-/*
-function useDynamicStyling() {
-	const {current: map} = useMap();
-	if (!map) return;
 
-	const [min, max] = map.queryRenderedFeatures()
-		.map(f => f.properties.score as number)
-		.reduce(
-			(prev, curr) => [prev[0] < curr ? prev[0] : curr, prev[1] < curr ? curr : prev[1]], 
-			[Number.MAX_VALUE, Number.MIN_VALUE]
-		);
+function refreshScoreRange(e: MapLibreEvent) {
+	const map = e.target;
+	const layer = TILE_LAYERS.find(l => l.maxZoom >= map.getZoom());
+	if (!layer) throw new AssertionError({ message: "Invalid zoom level" });
 
-	map.getLayer("dada")?.setPaintProperty
+	const range = map.queryRenderedFeatures().map(f => f.properties.score as number).reduce(
+		(prev, curr) => [prev[0] < curr ? prev[0] : curr, prev[1] < curr ? curr : prev[1]], 
+		[Number.MAX_VALUE, Number.MIN_VALUE]
+	) as ScoreRange;
 
-	map.getLayer("dadada")?.setPaintProperty('your-layer-id', 'fill-color', [
-		'interpolate',
-		['linear'],
-		['get', 'score'],
-		min, '#0000ff',
-		max, '#ff0000'
-	]);
+	const [min, max] = range;
+	console.log(`min: ${min}, max: ${max}`);
 
+	const style = map.getLayer(`${layer.id}-style`);
+	if (!style) throw new AssertionError({ message: "Invalid layer" });
+
+	const property = `${layer.style.type}-color`;
+	style.setPaintProperty(property, makeScoreToColorInterpolation());
 }
-*/
 
 export default function AccessibilityMap() {
-	//useDynamicStyling()
-
 	return (
 		<Map 
 		initialViewState={{
@@ -113,6 +109,7 @@ export default function AccessibilityMap() {
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/bright"
 		maxZoom={18}
+		onIdle={refreshScoreRange}
 		>
 			{TILE_LAYERS.map(toVectorSource)}
 		</Map>
