@@ -15,11 +15,14 @@ type SourceDefinition = {
 const MAX_SCORE_RANGE = [0, 10000] as ScoreRange;
 
 // Returns MapLibre expression syntax: https://maplibre.org/maplibre-style-spec/expressions/
-function colorInterpolate(range: ScoreRange) {
-	const [minA, maxA] = range;
-	const [minB, maxB] = MAX_SCORE_RANGE;
-	const min = (minA*2 + minB) / 3;
-	const max = (maxA*2 + maxB) / 3;
+function colorInterpolate(currentRange: ScoreRange) {
+	const minSpreadFraction = 0.5
+    const globalSpread = MAX_SCORE_RANGE[1] - MAX_SCORE_RANGE[0];
+    const minSpread = globalSpread * minSpreadFraction;
+    const mid = (currentRange[0] + currentRange[1]) / 2;
+    const halfSpread = Math.max((currentRange[1] - currentRange[0]) / 2, minSpread / 2);
+    const min = Math.max(MAX_SCORE_RANGE[0], mid - halfSpread);
+    const max = Math.min(MAX_SCORE_RANGE[1], mid + halfSpread);
 
 	return [
 		"interpolate", ["linear"],
