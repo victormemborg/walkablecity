@@ -6,7 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 const gridsP5Source: VectorSourceSpecification = {
 	type: "vector" as const,
-	tiles: ["http://localhost:3001/scored_grids_pmtiles_p5/{z}/{x}/{y}.pbf"],
+	tiles: ["http://localhost:3001/scored_grids_pmtiles_p5/{z}/{x}/{y}"],
 	minzoom: 0,
 	maxzoom: 8
 };
@@ -26,7 +26,7 @@ const gridsP5Style: FillLayerSpecification = {
 
 const gridsP6Source: VectorSourceSpecification = {
 	type: "vector" as const,
-	tiles: ["http://localhost:3001/scored_grids_pmtiles_p6/{z}/{x}/{y}.pbf"],
+	tiles: ["http://localhost:3001/scored_grids_pmtiles_p6/{z}/{x}/{y}"],
 	minzoom: 8,
 	maxzoom: 12
 };
@@ -46,7 +46,7 @@ const gridsP6Style: FillLayerSpecification = {
 
 const gridsP7Source: VectorSourceSpecification = {
 	type: "vector" as const,
-	tiles: ["http://localhost:3001/scored_grids_pmtiles_p7/{z}/{x}/{y}.pbf"],
+	tiles: ["http://localhost:3001/scored_grids_pmtiles_p7/{z}/{x}/{y}"],
 	minzoom: 12,
 	maxzoom: 14
 };
@@ -66,7 +66,7 @@ const gridsP7Style: FillLayerSpecification = {
 
 const edgesP0Source: VectorSourceSpecification = {
 	type: "vector" as const,
-	tiles: ["http://localhost:3001/scored_edges_pmtiles_p0/{z}/{x}/{y}.pbf"],
+	tiles: ["http://localhost:3001/scored_edges_pmtiles_p0/{z}/{x}/{y}"],
 	minzoom: 14,
 	maxzoom: 18
 };
