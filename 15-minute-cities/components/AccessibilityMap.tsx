@@ -4,6 +4,7 @@ import Map, { Layer, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
 import "maplibre-gl/dist/maplibre-gl.css";
 import { AssertionError } from "assert";
+import { useRef } from "react";
 
 type ScoreRange = [min: number, max: number];
 type SourceDefinition = {
@@ -86,24 +87,34 @@ function toJSX(sourceDef: SourceDefinition) {
 	);
 }
 
-function refreshScoreRange(event: MapLibreEvent) {
-	const map = event.target;
-	const sourceDef = SOURCE_DEFINITIONS.find(l => l.maxZoom >= map.getZoom());
-	if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
-
-	const layerId = `${sourceDef.id}-layer`;
-	const range = map.queryRenderedFeatures(undefined, { layers: [layerId]})
-		.map(f => f.properties.score as number)
-		.reduce(
-			(prev, curr) => [Math.min(prev[0], curr), Math.max(prev[1], curr)], 
-			[Infinity, -Infinity]
-		) as ScoreRange;
-
-	const property = `${sourceDef.style.type}-color`;
-	map.setPaintProperty(layerId, property, colorInterpolate(range));
-}
-
 export default function AccessibilityMap() {
+	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
+	
+	const refreshScoreRange = (event: MapLibreEvent) => {
+		if (cooldownTimerRef.current) return;
+
+		const map = event.target;
+		const sourceDef = SOURCE_DEFINITIONS.find(l => l.maxZoom >= map.getZoom());
+		if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
+
+		const layerId = `${sourceDef.id}-layer`;
+		const range = map.queryRenderedFeatures(undefined, { layers: [layerId]})
+			.map(f => f.properties.score as number)
+			.reduce(
+				(prev, curr) => [Math.min(prev[0], curr), Math.max(prev[1], curr)], 
+				[Infinity, -Infinity]
+			) as ScoreRange;
+
+		if (range[0] == Infinity && range[1] == -Infinity) return;
+
+		const property = `${sourceDef.style.type}-color`;
+		map.setPaintProperty(layerId, property, colorInterpolate(range));
+
+		cooldownTimerRef.current = setTimeout(() => {
+			cooldownTimerRef.current = null;
+		}, 200);
+	}
+
 	return (
 		<Map 
 		initialViewState={{
@@ -113,6 +124,7 @@ export default function AccessibilityMap() {
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/bright"
 		maxZoom={18}
+		onMove={refreshScoreRange}
 		onMoveEnd={refreshScoreRange}
 		>
 			{SOURCE_DEFINITIONS.map(toJSX)}
