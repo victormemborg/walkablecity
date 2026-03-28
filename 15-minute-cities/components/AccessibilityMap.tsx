@@ -1,12 +1,12 @@
 "use client";
 
-import Map, { Layer, Source, useMap, ViewStateChangeEvent} from "react-map-gl/maplibre";
+import Map, { Layer, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
 import "maplibre-gl/dist/maplibre-gl.css";
 import { AssertionError } from "assert";
 
 type ScoreRange = [min: number, max: number];
-type TileLayer = {
+type SourceDefinition = {
 	id: string;
 	maxZoom: number;
 	style: Pick<LayerSpecification, "type" | "paint">;
@@ -43,57 +43,57 @@ const EDGE_STYLE = {
 } as Pick<LayerSpecification, "type" | "paint">;
 
 // Must be ordered by 'maxZoom' (smallest first)
-const TILE_LAYERS: TileLayer[] = [
+const SOURCE_DEFINITIONS: SourceDefinition[] = [
 	{id: "scored_grids_pmtiles_p5", maxZoom: 8, style: GRID_STYLE},
 	{id: "scored_grids_pmtiles_p6", maxZoom: 12, style: GRID_STYLE},
 	{id: "scored_grids_pmtiles_p7", maxZoom: 14, style: GRID_STYLE},
 	{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: EDGE_STYLE}
 ];
 	
-function toVectorSource(tileLayer: TileLayer) {
-	const sourceId = `${tileLayer.id}-source`;
-	const styleId = `${tileLayer.id}-style`;
-	const minzoom = TILE_LAYERS.findLast(l => l.maxZoom < tileLayer.maxZoom)?.maxZoom ?? 0;
+function toJSX(sourceDef: SourceDefinition) {
+	const sourceId = `${sourceDef.id}-source`;
+	const layerId = `${sourceDef.id}-layer`;
+	const minzoom = SOURCE_DEFINITIONS.findLast(l => l.maxZoom < sourceDef.maxZoom)?.maxZoom ?? 0;
 
 	const source = {
 		type: "vector",
-		tiles: [`http://localhost:3001/${tileLayer.id}/{z}/{x}/{y}.pbf`],
+		tiles: [`http://localhost:3001/${sourceDef.id}/{z}/{x}/{y}`],
 		minzoom: minzoom,
-		maxzoom: tileLayer.maxZoom
+		maxzoom: sourceDef.maxZoom
 	} as VectorSourceSpecification;
 
-	const layerStyle = {
-		id: styleId,
-		type: tileLayer.style.type,
+	const layer = {
+		id: layerId,
+		type: sourceDef.style.type,
 		source: sourceId,
-		"source-layer": tileLayer.id,
-		paint: tileLayer.style.paint,
+		"source-layer": sourceDef.id,
+		paint: sourceDef.style.paint,
 		minzoom: minzoom,
-		maxzoom: tileLayer.maxZoom
+		maxzoom: sourceDef.maxZoom
 	} as LayerSpecification;
 
 	return (
 		<Source key={sourceId} id={sourceId} {...source}>
-			<Layer {...layerStyle}/>
+			<Layer {...layer}/>
 		</Source>
 	);
 }
 
 function refreshScoreRange(event: MapLibreEvent) {
 	const map = event.target;
-	const layer = TILE_LAYERS.find(l => l.maxZoom >= map.getZoom());
-	if (!layer) throw new AssertionError({ message: "Invalid zoom level" });
+	const sourceDef = SOURCE_DEFINITIONS.find(l => l.maxZoom >= map.getZoom());
+	if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
 
-	const styleId = `${layer.id}-style`;
-	const range = map.queryRenderedFeatures(undefined, { layers: [styleId]})
+	const layerId = `${sourceDef.id}-layer`;
+	const range = map.queryRenderedFeatures(undefined, { layers: [layerId]})
 		.map(f => f.properties.score as number)
 		.reduce(
 			(prev, curr) => [Math.min(prev[0], curr), Math.max(prev[1], curr)], 
 			[Infinity, -Infinity]
 		) as ScoreRange;
 
-	const property = `${layer.style.type}-color`;
-	map.setPaintProperty(styleId, property, makeScoreToColorInterpolation(range));
+	const property = `${sourceDef.style.type}-color`;
+	map.setPaintProperty(layerId, property, makeScoreToColorInterpolation(range));
 }
 
 export default function AccessibilityMap() {
@@ -108,7 +108,7 @@ export default function AccessibilityMap() {
 		maxZoom={18}
 		onMoveEnd={refreshScoreRange}
 		>
-			{TILE_LAYERS.map(toVectorSource)}
+			{SOURCE_DEFINITIONS.map(toJSX)}
 		</Map>
 	);
 }
