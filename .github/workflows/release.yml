@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir -p tiles
           scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -r \
-            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tiles/." \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/${{ secrets.SERVER_USER }}/bachelor-thesis/tiles/." \
             ./tiles/
 
       - name: Start benchmark stack
