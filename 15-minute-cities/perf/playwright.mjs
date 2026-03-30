@@ -20,7 +20,7 @@ const cities = [
   { id: "fredensborg", lat: 55.9784, lon: 12.4 },
 ];
 
-const zooms = [6, 11, 14, 15];
+const zooms = [8, 11, 14, 17];
 
 const scenarios = cities.flatMap((city) =>
   zooms.map((zoom) => ({ id: `${city.id}_z${zoom}`, lat: city.lat, lon: city.lon, zoom }))
@@ -92,8 +92,8 @@ async function runScenario(browser, scenario) {
 function formatMarkdown(results) {
   const lines = [
     "## Playwright benchmark",
-    "",
-    `Base URL: \`${baseUrl}\``,
+    "Benchmarked against: " + baseUrl,
+    "Zoom levels benchmarked: " + zooms.join(", ") +
     "",
     "| Scenario | Page (ms) | Tile count | Tile avg (ms) | Tile max (ms) |",
     "|----------|-----------|------------|---------------|---------------|",

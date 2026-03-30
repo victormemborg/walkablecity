@@ -11,3 +11,4 @@ GeoAlchemy2==0.18.4
 dagster
 dagster-postgres
 dagster-docker
+dagster-ssh
