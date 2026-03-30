@@ -6,5 +6,5 @@ ssh_resource = SSHResource(
     username=dg.EnvVar("SERVER_USER"),
     remote_port=22,
     key_file="/root/.ssh/dagster_pmtiles",
-    no_host_key_check=False,
+    no_host_key_check=True,
 )
