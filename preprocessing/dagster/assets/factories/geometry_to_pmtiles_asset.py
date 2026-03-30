@@ -24,8 +24,8 @@ def geometry_to_pmtiles_asset(upstream: AssetKey, partitions_def=None):
         """The new PMTiles archive asset"""
 
         precision = context.partition_key if partitions_def else "0"
-        file_name = f"{asset_name}_p{precision}.pmtiles"
-        out_path = os.path.join(context.instance.storage_directory(), file_name)
+        layer_name = f"{asset_name}_p{precision}"
+        out_path = os.path.join(context.instance.storage_directory(), f"{layer_name}.pmtiles")
 
         with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as tmp:
             tmp_path = tmp.name
@@ -34,7 +34,7 @@ def geometry_to_pmtiles_asset(upstream: AssetKey, partitions_def=None):
 
         proc = subprocess.run(
             ["tippecanoe",
-             f"--layer={file_name}",
+             f"--layer={layer_name}",
              f"--output={out_path}",
              "--minimum-zoom=0",
              "--maximum-zoom=18",

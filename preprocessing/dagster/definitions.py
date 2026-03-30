@@ -10,6 +10,7 @@ from assets.upload_pmtiles_prod import upload_scored_edges_pmtiles_prod, upload_
 from assets.walk_network import walk_network
 
 from resources.pandana_network_io_manager import pandana_network_io_manager
+from resources.global_config import GlobalConfig
 from resources.ssh_resource import ssh_resource
 
 defs = dg.Definitions(
@@ -22,6 +23,7 @@ defs = dg.Definitions(
     ],
     resources={
         "pandana_io_manager": pandana_network_io_manager,
+        "global_config": GlobalConfig(max_distance=10000)
         "ssh": ssh_resource,
     }
 )

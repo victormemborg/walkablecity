@@ -2,21 +2,29 @@ import dagster as dg
 import pandana as pdna
 import pandas as pd
 
-@dg.asset(kinds={"python"})
-async def scored_nodes(context: dg.AssetExecutionContext, walk_network: pdna.Network, grouped_distances: dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """Assign an accesibility score to each node in a network"""
+from resources.global_config import GlobalConfig
 
-    MAX_DIST = 1600 # Meters. Should be passed as run config
+@dg.asset(kinds={"python"})
+async def scored_nodes(
+    context: dg.AssetExecutionContext, 
+    walk_network: pdna.Network, 
+    grouped_distances: dict[str, pd.DataFrame], 
+    global_config: GlobalConfig
+) -> pd.DataFrame:
+    """Assign an accesibility score to each node in a network"""
     
     dist_df = pd.concat(
         [df["dist"] for df in grouped_distances.values()],
-        axis=1
+        axis="columns"
     )
 
     nodes = walk_network.nodes_df
-    nodes["score"] = (dist_df <= MAX_DIST).sum(axis=1)
-    scored_nodes = nodes[nodes["score"] > 0]
+    nodes["dist"] = dist_df.max(axis="columns")
 
-    context.log.info(f"Found {len(scored_nodes)} scored nodes")
-    return scored_nodes
+    filtered = nodes[nodes["dist"] <= global_config.max_distance]
+    filtered["score"] = abs(filtered["dist"] - global_config.max_distance)
+    filtered.drop(columns=["dist"])
+
+    context.log.info(f"Found {len(filtered)} scored nodes")
+    return filtered
 

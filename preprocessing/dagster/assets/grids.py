@@ -8,7 +8,7 @@ from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
 
 
-PRECISION_LEVELS = ["4", "5", "6", "7"]
+PRECISION_LEVELS = ["5", "6", "7"]
 precision_partitions = dg.StaticPartitionsDefinition(PRECISION_LEVELS)
 
 def box_hash(hash: str):
