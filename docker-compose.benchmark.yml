@@ -1,0 +1,23 @@
+services:
+  nginx:
+    image: nginx:latest
+    depends_on:
+      - web
+      - martin
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+
+  web:
+    image: vmemb/bachelorproject:latest
+    expose:
+      - "3000"
+
+  martin:
+    image: ghcr.io/maplibre/martin:latest
+    command: ["/tiles", "-l", "0.0.0.0:3001"]
+    volumes:
+      - ./tiles:/tiles:ro
+    expose:
+      - "3001"

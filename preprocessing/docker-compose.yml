@@ -18,8 +18,11 @@ services:
       DAGSTER_HOME: ${DAGSTER_HOME}
       DAGSTER_CURRENT_IMAGE: 'dagster_user_code_image'
       DATABASE_URL: ${DATABASE_URL}
+      SERVER_HOST: ${SERVER_HOST}
+      SERVER_USER: ${SERVER_USER}
     volumes:
       - dagster_home:${DAGSTER_HOME}
+      - ${SSH_PRIVATE_KEY_PATH}:/root/.ssh/dagster_pmtiles:ro
     networks:
       - internal
     healthcheck:
