@@ -17,8 +17,11 @@ permissions:
   contents: write
 
 jobs:
-  setup-infrastructure:
+  benchmark:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 15-minute-cities
     steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
@@ -31,6 +34,7 @@ jobs:
 
       - name: Setup SSH key
         shell: bash
+        working-directory: .
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_ed25519
@@ -39,6 +43,7 @@ jobs:
 
       - name: Copy tiles from server
         shell: bash
+        working-directory: .
         run: |
           mkdir -p tiles
           scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -r \
@@ -47,12 +52,14 @@ jobs:
 
       - name: Start benchmark stack
         shell: bash
+        working-directory: .
         run: |
           docker compose -f docker-compose.benchmark.yml pull
           docker compose -f docker-compose.benchmark.yml up -d
 
       - name: Wait for benchmark app
         shell: bash
+        working-directory: .
         run: |
           for i in {1..60}; do
             if curl -fsS http://127.0.0.1:8080 > /dev/null; then
@@ -63,18 +70,6 @@ jobs:
           docker compose -f docker-compose.benchmark.yml ps
           docker compose -f docker-compose.benchmark.yml logs --tail=100
           exit 1
-
-  run-benchmark:
-    needs: setup-infrastructure
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 15-minute-cities
-    outputs:
-      release_benchmark_summary: ${{ steps.export-summary.outputs.release_benchmark_summary }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -104,6 +99,12 @@ jobs:
           PLAYWRIGHT_SUMMARY_MD_PATH: benchmark-results/summary.md
         run: pnpm perf:playwright
 
+      - name: Stop benchmark stack
+        if: always()
+        shell: bash
+        working-directory: .
+        run: docker compose -f docker-compose.benchmark.yml down --remove-orphans
+
       - name: Export benchmark summary for release notes
         id: export-summary
         shell: bash
@@ -122,20 +123,8 @@ jobs:
           path: 15-minute-cities/benchmark-results
           if-no-files-found: warn
 
-  teardown-infrastructure:
-    needs: run-benchmark
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Stop benchmark stack
-        shell: bash
-        run: docker compose -f docker-compose.benchmark.yml down --remove-orphans
-
   calculate-version:
-    needs: run-benchmark
+    needs: benchmark
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.version.outputs.tag }}
@@ -171,7 +160,7 @@ jobs:
           echo "tag=$tag" >> $GITHUB_OUTPUT
 
   create-release:
-    needs: [run-benchmark, calculate-version]
+    needs: [benchmark, calculate-version]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -185,4 +174,4 @@ jobs:
           body: |
             Release ${{ needs.calculate-version.outputs.tag }}
 
-            ${{ needs.run-benchmark.outputs.release_benchmark_summary }}
+            ${{ needs.benchmark.outputs.release_benchmark_summary }}
