@@ -63,7 +63,7 @@ function toJSX(sourceDef: SourceDefinition) {
 	const sourceId = `${sourceDef.id}-source`;
 	const layerId = `${sourceDef.id}-layer`;
 	const minzoom = SOURCE_DEFINITIONS.findLast(l => l.maxZoom < sourceDef.maxZoom)?.maxZoom ?? 0;
-	const baseTileUrl = "/tiles";
+	const baseTileUrl = "https://walkablecity.app/tiles"; // Not optimal at all, but just seeing if it works
 
 	const source = {
 		type: "vector",
