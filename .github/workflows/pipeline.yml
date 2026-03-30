@@ -9,7 +9,6 @@ on:
       - 'preprocessing/**'
       - 'docker-compose.prod.yml'
       - 'nginx/**'
-      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
