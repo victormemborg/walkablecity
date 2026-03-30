@@ -66,7 +66,7 @@ function toJSX(sourceDef: SourceDefinition) {
 
 	const source = {
 		type: "vector",
-		tiles: [`http://localhost:3001/${sourceDef.id}/{z}/{x}/{y}`],
+		tiles: [`/tiles/${sourceDef.id}/{z}/{x}/{y}`],
 		minzoom: minzoom,
 		maxzoom: sourceDef.maxZoom
 	} as VectorSourceSpecification;
