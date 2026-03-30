@@ -63,7 +63,7 @@ function toJSX(sourceDef: SourceDefinition) {
 	const sourceId = `${sourceDef.id}-source`;
 	const layerId = `${sourceDef.id}-layer`;
 	const minzoom = SOURCE_DEFINITIONS.findLast(l => l.maxZoom < sourceDef.maxZoom)?.maxZoom ?? 0;
-	const baseTileUrl = process.env.MARTIN_URL ?? "http://localhost:3001";
+	const baseTileUrl = "/tiles";
 
 	const source = {
 		type: "vector",
