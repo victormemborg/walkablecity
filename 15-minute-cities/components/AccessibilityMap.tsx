@@ -52,9 +52,9 @@ const EDGE_STYLE = {
 
 // Must be ordered by 'maxZoom' (smallest first)
 const SOURCE_DEFINITIONS: SourceDefinition[] = [
-	{id: "scored_grids_pmtiles_p5", maxZoom: 8, style: GRID_STYLE},
+	{id: "scored_grids_pmtiles_p5", maxZoom: 9, style: GRID_STYLE},
 	{id: "scored_grids_pmtiles_p6", maxZoom: 12, style: GRID_STYLE},
-	{id: "scored_grids_pmtiles_p7", maxZoom: 14, style: GRID_STYLE},
+	{id: "scored_grids_pmtiles_p7", maxZoom: 15, style: GRID_STYLE},
 	{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: EDGE_STYLE}
 ];
 	
