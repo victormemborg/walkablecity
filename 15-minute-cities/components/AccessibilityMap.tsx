@@ -7,6 +7,7 @@ import { AssertionError } from "assert";
 import { useRef } from "react";
 
 type ScoreRange = [min: number, max: number];
+type AccessibilityMapProps = {center: {lat: number, lon: number}, zoom: number};
 type SourceDefinition = {
 	id: string;
 	maxZoom: number;
@@ -87,7 +88,7 @@ function toJSX(sourceDef: SourceDefinition) {
 	);
 }
 
-export default function AccessibilityMap() {
+export default function AccessibilityMap({center, zoom}: AccessibilityMapProps) {
 	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	
 	const refreshScoreRange = (event: MapLibreEvent) => {
@@ -118,9 +119,9 @@ export default function AccessibilityMap() {
 	return (
 		<Map 
 		initialViewState={{
-			longitude: 12.5683,
-			latitude: 55.6761,
-			zoom: 11
+			latitude: center.lat,
+			longitude: center.lon,
+			zoom: zoom
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/bright"
 		maxZoom={18}
