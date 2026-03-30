@@ -22,7 +22,7 @@ services:
       SERVER_USER: ${SERVER_USER}
     volumes:
       - dagster_home:${DAGSTER_HOME}
-      - ${SERVER_SSH_KEY_PATH}:/root/.ssh/dagster_pmtiles:ro
+      - ${SSH_PRIVATE_KEY_PATH}:/root/.ssh/dagster_pmtiles:ro
     networks:
       - internal
     healthcheck:
