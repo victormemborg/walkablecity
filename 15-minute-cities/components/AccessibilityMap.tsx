@@ -100,14 +100,15 @@ export default function AccessibilityMap({center, zoom}: AccessibilityMapProps) 
 		if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
 
 		const layerId = `${sourceDef.id}-layer`;
-		const range = map.queryRenderedFeatures(undefined, { layers: [layerId]})
+		const scores = map.queryRenderedFeatures(undefined, { layers: [layerId]})
 			.map(f => f.properties.score as number)
-			.reduce(
-				(prev, curr) => [Math.min(prev[0], curr), Math.max(prev[1], curr)], 
-				[Infinity, -Infinity]
-			) as ScoreRange;
+			.sort((a, b) => a - b);
+		
+		if (scores.length <= 0) return;
 
-		if (range[0] == Infinity && range[1] == -Infinity) return;
+		const lowIdx = Math.floor(scores.length * 0.05);
+		const highIdx = Math.ceil(scores.length * 0.95);
+		const range = [scores[lowIdx], scores[highIdx]] as ScoreRange;
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, colorInterpolate(range));
