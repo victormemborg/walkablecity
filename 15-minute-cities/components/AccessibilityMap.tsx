@@ -124,7 +124,7 @@ export default function AccessibilityMap({center, zoom}: AccessibilityMapProps) 
 			longitude: center.lon,
 			zoom: zoom
 		}}
-		mapStyle="https://tiles.openfreemap.org/styles/bright"
+		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
 		onMove={refreshScoreRange}
 		onMoveEnd={refreshScoreRange}
