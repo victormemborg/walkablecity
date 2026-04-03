@@ -3,7 +3,7 @@ import pandas as pd
 import pygeohash as pgh
 import geopandas as gpd
 
-from shapely.geometry import box
+from shapely.geometry import box, Polygon
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
 
@@ -38,30 +38,34 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) 
 
 @dg.asset(kinds={"python"}, partitions_def=precision_partitions)
 def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame):
-    """If any non-scored grid cell has X neighboring scored cells, assume score to be average of neighbors"""
+    """If any non-scored grid cell has 8 neighboring scored cells, assume score to be average of neighbors"""
 
     level = int(context.partition_key)
     context.log.info(f"Computing geohash precision {level} / {max(PRECISION_LEVELS)} ...")
 
-    count = scored_grids.sjoin(df=scored_grids, how="left", predicate="touches").groupby(level=0).size().rename("neighbor_count")
+    adjacent_grids: set[Polygon] = set() # All non-scored grids adjacent to any scored grid
+    for cur_grid in scored_grids.geometry:
+        cur_hash = pgh.encode(latitude=cur_grid.centroid.x, longitude=cur_grid.centroid.y, precision=level)
+        
+        directions: list[pgh.Direction] = ["left", "right", "top", "bottom"]
+        for direction in directions:
+            adjacent_hash = pgh.get_adjacent(cur_hash, direction)
+            adjacent_grid = box_hash(adjacent_hash)
+
+            if not scored_grids.geometry.geom_equals(adjacent_grid).any():
+                adjacent_grids.add(adjacent_grid)
+
+    adjacent_gpd = gpd.GeoDataFrame(list(adjacent_grids), crs=4326)
+    count = adjacent_gpd.sjoin(df=adjacent_gpd, how="left", predicate="touches") \
+        .groupby(level=0) \
+        .size() \
+        .rename("neighbor_count")
+    
     neighbors = scored_grids.join(count)
     print(f"before: {len(scored_grids.index)}, after: {len(neighbors.index)}")
     print(neighbors.head())
     print(neighbors.describe())
-    """
-    for geometry in scored_grids.geometry:
-        grid = pgh.encode(latitude=geometry.centroid.x, longitude=geometry.centroid.y, precision=level)
-        sum_sorrounding = 0
 
-        
-
-        right = pgh.get_adjacent(grid, "right")
-        if scored_grids.
-
-        left = pgh.get_adjacent(grid, "left")
-        top = pgh.get_adjacent(grid, "top")
-        bottom = pgh.get_adjacent(grid, "bottom")
-    """
     return neighbors
 
 scored_grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
