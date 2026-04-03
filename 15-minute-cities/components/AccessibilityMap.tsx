@@ -2,7 +2,6 @@
 
 import Map, { Layer, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
-import "maplibre-gl/dist/maplibre-gl.css";
 import { AssertionError } from "assert";
 import { useRef } from "react";
 
