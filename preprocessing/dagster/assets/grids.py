@@ -4,6 +4,7 @@ import pygeohash as pgh
 import geopandas as gpd
 
 from shapely.geometry import box, Polygon
+from shapely.geometry.base import BaseGeometry
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
 
@@ -43,26 +44,27 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
     level = int(context.partition_key)
     context.log.info(f"Computing geohash precision {level} / {max(PRECISION_LEVELS)} ...")
 
-    adjacent_grids: set[Polygon] = set() # All non-scored grids adjacent to any scored grid
-    for cur_grid in scored_grids.geometry:
-        cur_hash = pgh.encode(latitude=cur_grid.centroid.x, longitude=cur_grid.centroid.y, precision=level)
-        
+    already_scored: set[BaseGeometry] = set(scored_grids.geometry)
+    eligable_grids: set[BaseGeometry] = set() # Grids to be considered for interpolation
+
+    for scored_grid in scored_grids.geometry:
+        scored_hash = pgh.encode(latitude=scored_grid.centroid.y, longitude=scored_grid.centroid.x, precision=level)
         directions: list[pgh.Direction] = ["left", "right", "top", "bottom"]
+
         for direction in directions:
-            adjacent_hash = pgh.get_adjacent(cur_hash, direction)
+            adjacent_hash = pgh.get_adjacent(scored_hash, direction)
             adjacent_grid = box_hash(adjacent_hash)
 
-            if not scored_grids.geometry.geom_equals(adjacent_grid).any():
-                adjacent_grids.add(adjacent_grid)
+            if not adjacent_grid in already_scored:
+                eligable_grids.add(adjacent_grid)
 
-    adjacent_gpd = gpd.GeoDataFrame(list(adjacent_grids), crs=4326)
-    count = adjacent_gpd.sjoin(df=adjacent_gpd, how="left", predicate="touches") \
+    eligable = gpd.GeoDataFrame(geometry=list(eligable_grids), crs=4326)
+    count = eligable.sjoin(df=scored_grids, how="left", predicate="touches") \
         .groupby(level=0) \
         .size() \
         .rename("neighbor_count")
     
-    neighbors = scored_grids.join(count)
-    print(f"before: {len(scored_grids.index)}, after: {len(neighbors.index)}")
+    neighbors = eligable.join(count)
     print(neighbors.head())
     print(neighbors.describe())
 
