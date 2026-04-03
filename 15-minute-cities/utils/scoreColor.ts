@@ -1,4 +1,4 @@
-import type { ScoreRange } from "./mapTypes";
+import type { ScoreRange } from "../types/mapTypes";
 
 export const MAX_SCORE_RANGE: ScoreRange = [0, 10000];
 

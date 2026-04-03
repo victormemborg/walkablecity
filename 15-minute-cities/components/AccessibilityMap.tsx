@@ -5,9 +5,9 @@ import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } fro
 import { AssertionError } from "assert";
 import { useRef } from "react";
 import type { ScoreRange } from "../types/mapTypes";
-import { colorInterpolate, MAX_SCORE_RANGE } from "../types/accessibilityScoreColor";
+import { colorInterpolate, MAX_SCORE_RANGE } from "../utils/scoreColor";
+import type { MapView } from "../types/mapTypes";
 
-type AccessibilityMapProps = {center: {lat: number, lon: number}, zoom: number};
 type SourceDefinition = {
 	id: string;
 	maxZoom: number;
@@ -68,7 +68,7 @@ function toJSX(sourceDef: SourceDefinition) {
 	);
 }
 
-export default function AccessibilityMap({center, zoom}: AccessibilityMapProps) {
+export default function AccessibilityMap({center, zoom}: MapView) {
 	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	
 	const refreshScoreRange = (event: MapLibreEvent) => {

@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import AccessibilityMap from "@/components/AccessibilityMap";
 import { Suspense } from "react";
-import { parseMapView } from "@/types/queryParams";
+import { parseMapView } from "@/utils/queryParams";
 
 function Map() {
   const searchParams = useSearchParams();
