@@ -36,9 +36,37 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) 
     final = grouped[["geometry", "score"]]
     return gpd.GeoDataFrame(final, geometry="geometry", crs=4326)
 
-scored_grids_postgis = geometry_to_postgis_asset(scored_grids.key, partitions_def=precision_partitions)
+@dg.asset(kinds={"python"}, partitions_def=precision_partitions)
+def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame):
+    """If any non-scored grid cell has X neighboring scored cells, assume score to be average of neighbors"""
 
-scored_grids_pmtiles = geometry_to_pmtiles_asset(scored_grids.key, partitions_def=precision_partitions)
+    level = int(context.partition_key)
+    context.log.info(f"Computing geohash precision {level} / {max(PRECISION_LEVELS)} ...")
+
+    count = scored_grids.sjoin(df=scored_grids, how="left", predicate="touches").groupby(level=0).size().rename("neighbor_count")
+    neighbors = scored_grids.join(count)
+    print(f"before: {len(scored_grids.index)}, after: {len(neighbors.index)}")
+    print(neighbors.head())
+    print(neighbors.describe())
+    """
+    for geometry in scored_grids.geometry:
+        grid = pgh.encode(latitude=geometry.centroid.x, longitude=geometry.centroid.y, precision=level)
+        sum_sorrounding = 0
+
+        
+
+        right = pgh.get_adjacent(grid, "right")
+        if scored_grids.
+
+        left = pgh.get_adjacent(grid, "left")
+        top = pgh.get_adjacent(grid, "top")
+        bottom = pgh.get_adjacent(grid, "bottom")
+    """
+    return neighbors
+
+scored_grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
+
+scored_grids_pmtiles = geometry_to_pmtiles_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
 
     
