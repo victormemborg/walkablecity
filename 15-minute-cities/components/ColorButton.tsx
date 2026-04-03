@@ -8,7 +8,6 @@ type ColorButtonProps = {
 };
 
 export default function ColorButton({ colorBlindMode, onToggle }: ColorButtonProps) {
-    console.log("colorBlindMode:", colorBlindMode);
 	return (
 		<div
 			style={{

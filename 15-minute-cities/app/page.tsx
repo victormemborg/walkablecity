@@ -17,7 +17,7 @@ function Map() {
 				colorBlindMode={colorBlindMode}
 				onToggle={() => setColorBlindMode((current) => !current)}
 			/>
-			<AccessibilityMap {...mapView} />
+			<AccessibilityMap {...mapView} colorBlindMode={colorBlindMode} />
 		</>
 	);
 }

@@ -14,34 +14,42 @@ type SourceDefinition = {
 	style: Pick<LayerSpecification, "type" | "paint">;
 };
 
-const GRID_STYLE = {
-	type: "fill",
-	paint: {
-		"fill-color": getColorExpression(MAX_SCORE_RANGE, false),
-		"fill-opacity": 0.5
-	}
-} as Pick<LayerSpecification, "type" | "paint">;
+function getGridStyle(colorBlindMode: boolean) {
+	return {
+		type: "fill",
+		paint: {
+			"fill-color": getColorExpression(MAX_SCORE_RANGE, colorBlindMode),
+			"fill-opacity": 0.5
+		}
+	} as Pick<LayerSpecification, "type" | "paint">;
+}
 
-const EDGE_STYLE = {
-	type: "line",
-	paint: {
-		"line-color": getColorExpression(MAX_SCORE_RANGE, false),
-		"line-width": 2
-	}
-} as Pick<LayerSpecification, "type" | "paint">;
+function getEdgeStyle(colorBlindMode: boolean) {
+	return {
+		type: "line",
+		paint: {
+			"line-color": getColorExpression(MAX_SCORE_RANGE, colorBlindMode),
+			"line-width": 2
+		}
+	} as Pick<LayerSpecification, "type" | "paint">;
+}
 
 // Must be ordered by 'maxZoom' (smallest first)
-const SOURCE_DEFINITIONS: SourceDefinition[] = [
-	{id: "scored_grids_pmtiles_p5", maxZoom: 9, style: GRID_STYLE},
-	{id: "scored_grids_pmtiles_p6", maxZoom: 12, style: GRID_STYLE},
-	{id: "scored_grids_pmtiles_p7", maxZoom: 15, style: GRID_STYLE},
-	{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: EDGE_STYLE}
-];
-	
-function toJSX(sourceDef: SourceDefinition) {
+function getSourceDefinitions(colorBlindMode: boolean): SourceDefinition[] {
+	const gridStyle = getGridStyle(colorBlindMode);
+	const edgeStyle = getEdgeStyle(colorBlindMode);
+	return [
+		{id: "scored_grids_pmtiles_p5", maxZoom: 9, style: gridStyle},
+		{id: "scored_grids_pmtiles_p6", maxZoom: 12, style: gridStyle},
+		{id: "scored_grids_pmtiles_p7", maxZoom: 15, style: gridStyle},
+		{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: edgeStyle}
+	];
+}
+
+function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[]) {
 	const sourceId = `${sourceDef.id}-source`;
 	const layerId = `${sourceDef.id}-layer`;
-	const minzoom = SOURCE_DEFINITIONS.findLast(def => def.maxZoom < sourceDef.maxZoom)?.maxZoom ?? 0;
+	const minzoom = sourceDefinitions.findLast(def => def.maxZoom < sourceDef.maxZoom)?.maxZoom ?? 0;
 	const baseTileUrl = process.env.NODE_ENV === "development" ? "http://localhost:8080/tiles" : "https://walkablecity.app/tiles";
 
 	const source = {
@@ -68,21 +76,20 @@ function toJSX(sourceDef: SourceDefinition) {
 	);
 }
 
-export default function AccessibilityMap({center, zoom}: MapView) {
+export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
 	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
-	
+	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
 	const refreshScoreRange = (event: MapLibreEvent) => {
 		if (cooldownTimerRef.current) return;
 
 		const map = event.target;
-		const sourceDef = SOURCE_DEFINITIONS.find(def => def.maxZoom >= map.getZoom());
+		const sourceDef = sourceDefinitions.find(def => def.maxZoom >= map.getZoom());
 		if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
 
 		const layerId = `${sourceDef.id}-layer`;
 		const scores = map.queryRenderedFeatures(undefined, { layers: [layerId]})
 			.map(f => f.properties.score as number)
 			.sort((a, b) => a - b);
-		
 		if (scores.length <= 0) return;
 
 		const lowIdx = Math.floor(scores.length * 0.05);
@@ -90,7 +97,7 @@ export default function AccessibilityMap({center, zoom}: MapView) {
 		const range = [scores[lowIdx], scores[highIdx]] as ScoreRange;
 
 		const property = `${sourceDef.style.type}-color`;
-		map.setPaintProperty(layerId, property, getColorExpression(range, false));
+		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
 
 		cooldownTimerRef.current = setTimeout(() => {
 			cooldownTimerRef.current = null;
@@ -109,8 +116,7 @@ export default function AccessibilityMap({center, zoom}: MapView) {
 		onMove={refreshScoreRange}
 		onMoveEnd={refreshScoreRange}
 		>
-			{SOURCE_DEFINITIONS.map(toJSX)}
+			{sourceDefinitions.map(def => toJSX(def, sourceDefinitions))}
 		</Map>
 	);
 }
-	
