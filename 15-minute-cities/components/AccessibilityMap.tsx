@@ -5,7 +5,7 @@ import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } fro
 import { AssertionError } from "assert";
 import { useRef } from "react";
 import type { ScoreRange } from "../types/mapTypes";
-import { colorInterpolate, MAX_SCORE_RANGE } from "../utils/scoreColor";
+import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
 import type { MapView } from "../types/mapTypes";
 
 type SourceDefinition = {
@@ -17,7 +17,7 @@ type SourceDefinition = {
 const GRID_STYLE = {
 	type: "fill",
 	paint: {
-		"fill-color": colorInterpolate(MAX_SCORE_RANGE),
+		"fill-color": getColorExpression(MAX_SCORE_RANGE, false),
 		"fill-opacity": 0.5
 	}
 } as Pick<LayerSpecification, "type" | "paint">;
@@ -25,7 +25,7 @@ const GRID_STYLE = {
 const EDGE_STYLE = {
 	type: "line",
 	paint: {
-		"line-color": colorInterpolate(MAX_SCORE_RANGE),
+		"line-color": getColorExpression(MAX_SCORE_RANGE, false),
 		"line-width": 2
 	}
 } as Pick<LayerSpecification, "type" | "paint">;
@@ -90,7 +90,7 @@ export default function AccessibilityMap({center, zoom}: MapView) {
 		const range = [scores[lowIdx], scores[highIdx]] as ScoreRange;
 
 		const property = `${sourceDef.style.type}-color`;
-		map.setPaintProperty(layerId, property, colorInterpolate(range));
+		map.setPaintProperty(layerId, property, getColorExpression(range, false));
 
 		cooldownTimerRef.current = setTimeout(() => {
 			cooldownTimerRef.current = null;

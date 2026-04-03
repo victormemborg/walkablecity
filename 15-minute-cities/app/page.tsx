@@ -2,14 +2,24 @@
 
 import { useSearchParams } from "next/navigation";
 import AccessibilityMap from "@/components/AccessibilityMap";
-import { Suspense } from "react";
+import ColorButton from "@/components/ColorButton";
+import { Suspense, useState } from "react";
 import { parseMapView } from "@/utils/queryParams";
 
 function Map() {
   const searchParams = useSearchParams();
+	const [colorBlindMode, setColorBlindMode] = useState(false);
 	const mapView = parseMapView(searchParams);
 
-	return <AccessibilityMap {...mapView} />;
+	return (
+		<>
+			<ColorButton
+				colorBlindMode={colorBlindMode}
+				onToggle={() => setColorBlindMode((current) => !current)}
+			/>
+			<AccessibilityMap {...mapView} />
+		</>
+	);
 }
 
 export default function Home() {
