@@ -80,7 +80,7 @@ async function runScenario(browser, scenario) {
 
   if (!response?.ok()) throw new Error(`Page load failed: ${scenario.id}`);
 
-  await page.waitForSelector(".leaflet-container", { state: "visible" });
+  await page.waitForSelector(".maplibregl-canvas", { state: "visible" });
   await waitForTileSettling(tracker);
 
   const pageDuration = Date.now() - pageStart;
