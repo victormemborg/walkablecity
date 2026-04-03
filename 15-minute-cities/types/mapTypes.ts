@@ -8,3 +8,8 @@ export interface MapView {
     };
     zoom: number;
 }
+
+/**
+ * 
+ */
+export type ScoreRange = [min: number, max: number];

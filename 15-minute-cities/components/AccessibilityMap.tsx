@@ -4,35 +4,15 @@ import Map, { Layer, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
 import { AssertionError } from "assert";
 import { useRef } from "react";
+import type { ScoreRange } from "../types/mapTypes";
+import { colorInterpolate, MAX_SCORE_RANGE } from "../types/accessibilityScoreColor";
 
-type ScoreRange = [min: number, max: number];
 type AccessibilityMapProps = {center: {lat: number, lon: number}, zoom: number};
 type SourceDefinition = {
 	id: string;
 	maxZoom: number;
 	style: Pick<LayerSpecification, "type" | "paint">;
 };
-
-const MAX_SCORE_RANGE = [0, 10000] as ScoreRange;
-
-// Returns MapLibre expression syntax: https://maplibre.org/maplibre-style-spec/expressions/
-function colorInterpolate(currentRange: ScoreRange) {
-	const minSpreadFraction = 0.5;
-    const globalSpread = MAX_SCORE_RANGE[1] - MAX_SCORE_RANGE[0];
-    const minSpread = globalSpread * minSpreadFraction;
-    const mid = (currentRange[0] + currentRange[1]) / 2;
-    const halfSpread = Math.max((currentRange[1] - currentRange[0]) / 2, minSpread / 2);
-    const min = Math.max(MAX_SCORE_RANGE[0], mid - halfSpread);
-    const max = Math.min(MAX_SCORE_RANGE[1], mid + halfSpread);
-
-	return [
-		"interpolate", ["linear"],
-		["get", "score"],
-		min, "#d73027",
-		(min + max) / 2, "#f3f37d",
-		max, "#1a9850"
-	]
-}
 
 const GRID_STYLE = {
 	type: "fill",
