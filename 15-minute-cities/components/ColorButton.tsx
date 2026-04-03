@@ -17,7 +17,17 @@ export default function ColorButton({ colorBlindMode, onToggle }: ColorButtonPro
 				zIndex: 10,
 			}}
 		>
-			<Button variant="contained" onClick={onToggle}>
+			<Button
+				variant="contained"
+				onClick={onToggle}
+				sx={{
+					backgroundColor: "#000000",
+					color: "#fffff",
+					"&:hover": {
+						backgroundColor: "#292727",
+					},
+				}}
+			>
 				{colorBlindMode ? "Color blind: on" : "Color blind: off"}
 			</Button>
 		</div>
