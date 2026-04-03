@@ -18,7 +18,7 @@ const MAX_SCORE_RANGE = [0, 10000] as ScoreRange;
 
 // Returns MapLibre expression syntax: https://maplibre.org/maplibre-style-spec/expressions/
 function colorInterpolate(currentRange: ScoreRange) {
-	const minSpreadFraction = 0.5
+	const minSpreadFraction = 0.5;
     const globalSpread = MAX_SCORE_RANGE[1] - MAX_SCORE_RANGE[0];
     const minSpread = globalSpread * minSpreadFraction;
     const mid = (currentRange[0] + currentRange[1]) / 2;
@@ -62,7 +62,7 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
 function toJSX(sourceDef: SourceDefinition) {
 	const sourceId = `${sourceDef.id}-source`;
 	const layerId = `${sourceDef.id}-layer`;
-	const minzoom = SOURCE_DEFINITIONS.findLast(l => l.maxZoom < sourceDef.maxZoom)?.maxZoom ?? 0;
+	const minzoom = SOURCE_DEFINITIONS.findLast(def => def.maxZoom < sourceDef.maxZoom)?.maxZoom ?? 0;
 	const baseTileUrl = process.env.NODE_ENV === "development" ? "http://localhost:8080/tiles" : "https://walkablecity.app/tiles";
 
 	const source = {
@@ -96,18 +96,19 @@ export default function AccessibilityMap({center, zoom}: AccessibilityMapProps) 
 		if (cooldownTimerRef.current) return;
 
 		const map = event.target;
-		const sourceDef = SOURCE_DEFINITIONS.find(l => l.maxZoom >= map.getZoom());
+		const sourceDef = SOURCE_DEFINITIONS.find(def => def.maxZoom >= map.getZoom());
 		if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
 
 		const layerId = `${sourceDef.id}-layer`;
-		const range = map.queryRenderedFeatures(undefined, { layers: [layerId]})
+		const scores = map.queryRenderedFeatures(undefined, { layers: [layerId]})
 			.map(f => f.properties.score as number)
-			.reduce(
-				(prev, curr) => [Math.min(prev[0], curr), Math.max(prev[1], curr)], 
-				[Infinity, -Infinity]
-			) as ScoreRange;
+			.sort((a, b) => a - b);
+		
+		if (scores.length <= 0) return;
 
-		if (range[0] == Infinity && range[1] == -Infinity) return;
+		const lowIdx = Math.floor(scores.length * 0.05);
+		const highIdx = Math.floor(scores.length * 0.95);
+		const range = [scores[lowIdx], scores[highIdx]] as ScoreRange;
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, colorInterpolate(range));
