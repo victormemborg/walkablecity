@@ -1,7 +1,7 @@
 import type { ScoreRange } from "../types/mapTypes";
 import type { ExpressionSpecification } from "maplibre-gl";
 
-export const MAX_SCORE_RANGE: ScoreRange = [0, 10000];
+export const MAX_SCORE_RANGE: ScoreRange = [0, 100000];
 
 /**
  * Config for the color palette used to show accessibility scores on the map. Provides both a default and a color blind friendly palette.
@@ -22,7 +22,7 @@ export function getColorPalette(colorBlindMode: boolean) {
  * @returns An array representing the MapLibre expression for color interpolation.
  */
 function colorInterpolate(currentRange: ScoreRange): ExpressionSpecification {
-    const minSpreadFraction = 0.5;
+    const minSpreadFraction = 0.05;
     const globalSpread = MAX_SCORE_RANGE[1] - MAX_SCORE_RANGE[0];
     const minSpread = globalSpread * minSpreadFraction;
     const mid = (currentRange[0] + currentRange[1]) / 2;
@@ -50,7 +50,7 @@ function colorInterpolate(currentRange: ScoreRange): ExpressionSpecification {
  * @returns An array representing the MapLibre expression for color interpolation.
  */
 function colorInterpolateColorBlind(currentRange: ScoreRange): ExpressionSpecification {
-    const minSpreadFraction = 0.5;
+    const minSpreadFraction = 0.05;
     const globalSpread = MAX_SCORE_RANGE[1] - MAX_SCORE_RANGE[0];
     const minSpread = globalSpread * minSpreadFraction;
     const mid = (currentRange[0] + currentRange[1]) / 2;
