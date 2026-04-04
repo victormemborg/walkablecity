@@ -23,7 +23,7 @@ defs = dg.Definitions(
     ],
     resources={
         "pandana_io_manager": pandana_network_io_manager,
-        "global_config": GlobalConfig(max_distance=10000),
+        "global_config": GlobalConfig(max_distance=100000), # 50k seems to be enough for DK
         "ssh": ssh_resource,
     }
 )
