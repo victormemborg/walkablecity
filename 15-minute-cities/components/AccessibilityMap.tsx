@@ -39,9 +39,9 @@ function getSourceDefinitions(colorBlindMode: boolean): SourceDefinition[] {
 	const gridStyle = getGridStyle(colorBlindMode);
 	const edgeStyle = getEdgeStyle(colorBlindMode);
 	return [
-		{id: "scored_grids_pmtiles_p5", maxZoom: 9, style: gridStyle},
-		{id: "scored_grids_pmtiles_p6", maxZoom: 12, style: gridStyle},
-		{id: "scored_grids_pmtiles_p7", maxZoom: 15, style: gridStyle},
+		{id: "interpolated_grids_pmtiles_p5", maxZoom: 9, style: gridStyle},
+		{id: "interpolated_grids_pmtiles_p6", maxZoom: 12, style: gridStyle},
+		{id: "interpolated_grids_pmtiles_p7", maxZoom: 15, style: gridStyle},
 		{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: edgeStyle}
 	];
 }
