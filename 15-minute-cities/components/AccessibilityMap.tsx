@@ -75,8 +75,8 @@ function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[
 }
 
 export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
-	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
+	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	const mapRef = useRef<MapRef>(null);
 
 	const refreshScoreRange = () => {
@@ -126,7 +126,6 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
-		onMove={refreshScoreRange}
 		onMoveEnd={refreshScoreRange}
 		onLoad={refreshScoreRange}
 		>
