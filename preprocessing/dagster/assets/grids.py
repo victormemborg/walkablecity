@@ -3,7 +3,8 @@ import pandas as pd
 import pygeohash as pgh
 import geopandas as gpd
 
-from shapely.geometry import box, Polygon
+from typing import cast
+from shapely.geometry import box
 from shapely.geometry.base import BaseGeometry
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
@@ -28,17 +29,17 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) 
         for lat, lon in zip(scored_nodes["y"], scored_nodes["x"])
     ]
 
-    level_df = scored_nodes[["score"]].copy()
+    level_df = scored_nodes[["score"]]
     level_df["hash"] = hashes
 
     grouped = level_df.groupby("hash", as_index=False).agg({"score": "mean"})
-    grouped["geometry"] = grouped["hash"].apply(box_hash)
+    grouped["geometry"] = grouped["hash"].map(box_hash)
 
     final = grouped[["geometry", "score"]]
     return gpd.GeoDataFrame(final, geometry="geometry", crs=4326)
 
 @dg.asset(kinds={"python"}, partitions_def=precision_partitions)
-def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame):
+def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """If any non-scored grid cell has 8 neighboring scored cells, assume score to be average of neighbors"""
 
     level = int(context.partition_key)
@@ -58,17 +59,23 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
             if not adjacent_grid in already_scored:
                 eligable_grids.add(adjacent_grid)
 
-    eligable = gpd.GeoDataFrame(geometry=list(eligable_grids), crs=4326)
-    count = eligable.sjoin(df=scored_grids, how="left", predicate="touches") \
-        .groupby(level=0) \
-        .size() \
-        .rename("neighbor_count")
+    eligable = gpd.GeoDataFrame(geometry=list(eligable_grids), crs=scored_grids.crs)
+    aggregated = eligable.sjoin(df=scored_grids, how="left", predicate="touches") \
+        .groupby("geometry") \
+        ["score"].aggregate(["mean", "count"]) \
+        .rename(columns={"mean": "score", "count": "neighbor_count"}) \
     
-    neighbors = eligable.join(count)
-    print(neighbors.head())
-    print(neighbors.describe())
+    interpolated = aggregated[aggregated["neighbor_count"] == 8]
+    interpolated = interpolated[["score"]]
 
-    return neighbors
+    with pd.option_context('display.max_colwidth', None):
+        context.log.info(interpolated.head())
+        context.log.info(interpolated.describe())
+
+    combined = pd.concat([scored_grids, interpolated], ignore_index=True)
+    context.log.info(f"# of grids\nbefore: {len(scored_grids.index)}\nafter: {len(combined.index)}")
+
+    return cast(gpd.GeoDataFrame, combined)
 
 scored_grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
