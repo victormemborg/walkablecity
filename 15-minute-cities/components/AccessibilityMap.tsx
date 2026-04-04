@@ -2,7 +2,6 @@
 
 import Map, { Layer, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
-import { useRef } from "react";
 import type { ScoreRange } from "../types/mapTypes";
 import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
 import type { MapView } from "../types/mapTypes";
@@ -76,11 +75,8 @@ function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[
 }
 
 export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
-	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
 	const refreshScoreRange = (event: MapLibreEvent) => {
-		if (cooldownTimerRef.current) return;
-
 		const map = event.target;
 		const sourceDef = sourceDefinitions.find(def => def.maxZoom >= map.getZoom());
 		if (!sourceDef) throw new Error("Invalid zoom level");
@@ -97,10 +93,6 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
-
-		cooldownTimerRef.current = setTimeout(() => {
-			cooldownTimerRef.current = null;
-		}, 200);
 	}
 
 	return (
@@ -112,7 +104,6 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
-		onMove={refreshScoreRange}
 		onMoveEnd={refreshScoreRange}
 		>
 			{sourceDefinitions.map(def => toJSX(def, sourceDefinitions))}
