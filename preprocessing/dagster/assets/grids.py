@@ -65,8 +65,9 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
         ["score"].aggregate(["mean", "count"]) \
         .rename(columns={"mean": "score", "count": "neighbor_count"}) \
     
-    interpolated = aggregated[aggregated["neighbor_count"] == 8]
-    interpolated = interpolated[["score"]]
+    interpolated = aggregated[aggregated["neighbor_count"] == 8] \
+        .drop(columns="neighbor_count") \
+        .reset_index()
 
     with pd.option_context('display.max_colwidth', None):
         context.log.info(interpolated.head())
