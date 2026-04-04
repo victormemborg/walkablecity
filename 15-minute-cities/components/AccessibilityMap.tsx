@@ -2,7 +2,6 @@
 
 import Map, { Layer, MapRef, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
-import { AssertionError } from "assert";
 import { useEffect, useRef } from "react";
 import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
 import type { MapView } from "../types/mapTypes";
@@ -87,7 +86,7 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		if (!map || !map.isStyleLoaded()) return;
 
 		const sourceDef = sourceDefinitions.find(def => def.maxZoom >= map.getZoom());
-		if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
+		if (!sourceDef) throw new Error("Invalid zoom level");
 
 		const layerId = `${sourceDef.id}-layer`;
 		const scores = map.queryRenderedFeatures(undefined, { layers: [layerId]})
