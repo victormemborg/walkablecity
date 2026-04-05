@@ -1,9 +1,9 @@
 "use client";
 
-import Map, { Layer, Source } from "react-map-gl/maplibre";
+import Map, { Layer, MapRef, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
 import { AssertionError } from "assert";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { ScoreRange } from "../types/mapTypes";
 import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
 import type { MapView } from "../types/mapTypes";
@@ -79,10 +79,14 @@ function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[
 export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
 	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
-	const refreshScoreRange = (event: MapLibreEvent) => {
+	const mapRef = useRef<MapRef>(null);
+
+	const refreshScoreRange = () => {
 		if (cooldownTimerRef.current) return;
 
-		const map = event.target;
+		const map = mapRef.current?.getMap();
+		if (!map || !map.isStyleLoaded()) return;
+
 		const sourceDef = sourceDefinitions.find(def => def.maxZoom >= map.getZoom());
 		if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
 
@@ -104,8 +108,19 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		}, 200);
 	}
 
+	useEffect(() => {
+		const map = mapRef.current;
+		const unsubsribeAndRefresh = () => {
+			map?.off("idle", unsubsribeAndRefresh);
+			refreshScoreRange();
+		}
+
+		map?.on("idle", unsubsribeAndRefresh);
+	}, [colorBlindMode])
+
 	return (
-		<Map 
+		<Map
+		ref={mapRef}
 		initialViewState={{
 			latitude: center.lat,
 			longitude: center.lon,
@@ -115,6 +130,7 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		maxZoom={18}
 		onMove={refreshScoreRange}
 		onMoveEnd={refreshScoreRange}
+		onLoad={refreshScoreRange}
 		>
 			{sourceDefinitions.map(def => toJSX(def, sourceDefinitions))}
 		</Map>
