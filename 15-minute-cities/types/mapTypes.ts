@@ -12,4 +12,7 @@ export type MapView = {
 /**
  * 
  */
-export type ScoreRange = [min: number, max: number];
+export type ScoreRange = {
+    min: number; 
+    max: number;
+};

@@ -1,8 +1,9 @@
 "use client";
 
-import Map, { Layer, Source } from "react-map-gl/maplibre";
-import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
-import type { ScoreRange } from "../types/mapTypes";
+import Map, { Layer, MapRef, Source } from "react-map-gl/maplibre";
+import type { VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
+import { AssertionError } from "assert";
+import { useEffect, useRef } from "react";
 import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
 import type { MapView } from "../types/mapTypes";
 
@@ -76,8 +77,14 @@ function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[
 
 export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
 	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
-	const refreshScoreRange = (event: MapLibreEvent) => {
-		const map = event.target;
+	const mapRef = useRef<MapRef>(null);
+
+	const refreshScoreRange = () => {
+		if (cooldownTimerRef.current) return;
+
+		const map = mapRef.current?.getMap();
+		if (!map || !map.isStyleLoaded()) return;
+
 		const sourceDef = sourceDefinitions.find(def => def.maxZoom >= map.getZoom());
 		if (!sourceDef) throw new Error("Invalid zoom level");
 
@@ -89,14 +96,25 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 
 		const lowIdx = Math.floor(scores.length * 0.05);
 		const highIdx = Math.floor(scores.length * 0.95);
-		const range = [scores[lowIdx], scores[highIdx]] as ScoreRange;
+		const range = {min: scores[lowIdx], max: scores[highIdx]};
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
 	}
 
+	useEffect(() => {
+		const map = mapRef.current;
+		const unsubsribeAndRefresh = () => {
+			map?.off("idle", unsubsribeAndRefresh);
+			refreshScoreRange();
+		}
+
+		map?.on("idle", unsubsribeAndRefresh);
+	}, [colorBlindMode])
+
 	return (
-		<Map 
+		<Map
+		ref={mapRef}
 		initialViewState={{
 			latitude: center.lat,
 			longitude: center.lon,
@@ -105,6 +123,7 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
 		onMoveEnd={refreshScoreRange}
+		onLoad={refreshScoreRange}
 		>
 			{sourceDefinitions.map(def => toJSX(def, sourceDefinitions))}
 		</Map>
