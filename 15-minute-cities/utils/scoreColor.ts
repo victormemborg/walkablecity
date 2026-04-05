@@ -5,7 +5,7 @@ import type { ExpressionSpecification } from "maplibre-gl";
 // Check the latest dagster run that materialized the
 // 'scored_nodes' asset to find upper bound. TODO: A 
 // more robust way of syncing these values would be nice.
-export const MAX_SCORE_RANGE: ScoreRange = { min: 0, max: 45898 };
+export const MAX_SCORE_RANGE: ScoreRange = { min: 0, max: 46000 }; // 45899 + 101 buffer
 const MIN_SPREAD_FRACTION: number = 0.1;
 
 /**
