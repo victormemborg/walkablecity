@@ -18,13 +18,13 @@ type LegendEntry = {
  */
 export function buildLegend(currentRange: ScoreRange, colorBlindMode: boolean): LegendEntry[] {
   const palette = getColorPalette(colorBlindMode);
-  const stepSize = (currentRange[1] - currentRange[0]) / palette.length;
+  const stepSize = (currentRange.max - currentRange.min) / palette.length;
 
   return palette.map((color, index) => {
-    const upperBound = currentRange[1] - stepSize * index;
+    const upperBound = currentRange.max - stepSize * index;
     const lowerBound = index < palette.length - 1
-      ? currentRange[1] - stepSize * (index + 1)
-      : currentRange[0];
+      ? currentRange.max - stepSize * (index + 1)
+      : currentRange.max;
 
     let label: string;
     if (index === 0) {
