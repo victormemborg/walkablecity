@@ -98,7 +98,8 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 
 		const lowIdx = Math.floor(scores.length * 0.05);
 		const highIdx = Math.floor(scores.length * 0.95);
-		const range = [scores[lowIdx], scores[highIdx]] as ScoreRange;
+		const range = {min: scores[lowIdx], max: scores[highIdx]};
+		console.log(range)
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
