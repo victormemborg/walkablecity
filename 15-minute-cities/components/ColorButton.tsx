@@ -12,7 +12,7 @@ type ColorButtonProps = {
 };
 
 export default function ColorButton({ colorBlindMode, currentRange, onToggle }: ColorButtonProps) {
-  const legend = buildLegend(currentRange ? currentRange : { min: NaN, max: NaN }, colorBlindMode);
+  const legend = currentRange ? buildLegend(currentRange, colorBlindMode) :[];
 
   return (
     <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
@@ -22,20 +22,26 @@ export default function ColorButton({ colorBlindMode, currentRange, onToggle }: 
             Legend
           </Typography>
           <Stack spacing={1}>
-            {legend.map((item, index) => (
-              <Box key={index} sx={{ display: "flex", alignItems: "center" }}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 20,
-                    backgroundColor: item.color,
-                    border: "1px solid #bdbdbd",
-                    mr: 1,
-                  }}
-                />
-                <Typography variant="body2">{item.label}</Typography>
-              </Box>
-            ))}
+            {currentRange ? (
+              legend.map((item, index) => (
+                <Box key={index} sx={{ display: "flex", alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      backgroundColor: item.color,
+                      border: "1px solid #bdbdbd",
+                      mr: 1,
+                    }}
+                  />
+                  <Typography variant="body2">{item.label}</Typography>
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Loading score range...
+              </Typography>
+            )}
           </Stack>
           <Box sx={{ height: 12 }} />
 		<Button
