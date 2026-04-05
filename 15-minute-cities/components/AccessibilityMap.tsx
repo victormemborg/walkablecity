@@ -1,10 +1,9 @@
 "use client";
 
 import Map, { Layer, MapRef, Source } from "react-map-gl/maplibre";
-import type { VectorSourceSpecification, LayerSpecification, MapLibreEvent } from 'maplibre-gl';
+import type { VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
 import { AssertionError } from "assert";
 import { useEffect, useRef } from "react";
-import type { ScoreRange } from "../types/mapTypes";
 import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
 import type { MapView } from "../types/mapTypes";
 
@@ -98,7 +97,7 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 
 		const lowIdx = Math.floor(scores.length * 0.05);
 		const highIdx = Math.floor(scores.length * 0.95);
-		const range = [scores[lowIdx], scores[highIdx]] as ScoreRange;
+		const range = {min: scores[lowIdx], max: scores[highIdx]};
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
