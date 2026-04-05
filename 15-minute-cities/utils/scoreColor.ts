@@ -1,7 +1,11 @@
 import type { ScoreRange } from "../types/mapTypes";
 import type { ExpressionSpecification } from "maplibre-gl";
 
-export const MAX_SCORE_RANGE: ScoreRange = [0, 100000];
+// Must be synced with score range in current pmtiles.
+// Check the latest dagster run that materialized the
+// 'scored_nodes' asset to find upper bound. TODO: A 
+// more robust way of syncing these values would be nice.
+export const MAX_SCORE_RANGE: ScoreRange = [0, 45898];
 
 /**
  * Generates a MapLibre expression for interpolating colors based on score values.
