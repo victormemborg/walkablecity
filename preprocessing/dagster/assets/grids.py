@@ -8,6 +8,7 @@ from shapely.geometry import box
 from shapely.geometry.base import BaseGeometry
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
+from assets.factories.upload_pmtiles_prod_asset import upload_pmtiles_prod_asset
 
 
 PRECISION_LEVELS = ["5", "6", "7"]
@@ -78,9 +79,9 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
 
     return cast(gpd.GeoDataFrame, combined)
 
-scored_grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
+grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
-scored_grids_pmtiles = geometry_to_pmtiles_asset(interpolated_grids.key, partitions_def=precision_partitions)
+grids_pmtiles = geometry_to_pmtiles_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
-
+grids_uploaded = upload_pmtiles_prod_asset(grids_pmtiles.key, partitions_def=precision_partitions)
     
