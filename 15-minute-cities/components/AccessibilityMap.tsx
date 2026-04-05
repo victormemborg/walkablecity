@@ -38,8 +38,8 @@ function getSourceDefinitions(colorBlindMode: boolean): SourceDefinition[] {
 	const edgeStyle = getEdgeStyle(colorBlindMode);
 	return [
 		{id: "interpolated_grids_pmtiles_p5", maxZoom: 9, style: gridStyle},
-		{id: "interpolated_grids_pmtiles_p6", maxZoom: 12, style: gridStyle},
-		{id: "interpolated_grids_pmtiles_p7", maxZoom: 15, style: gridStyle},
+		{id: "interpolated_grids_pmtiles_p6", maxZoom: 13, style: gridStyle},
+		//{id: "interpolated_grids_pmtiles_p7", maxZoom: 15, style: gridStyle},
 		{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: edgeStyle}
 	];
 }
@@ -76,12 +76,9 @@ function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[
 
 export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
 	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
-	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	const mapRef = useRef<MapRef>(null);
 
 	const refreshScoreRange = () => {
-		if (cooldownTimerRef.current) return;
-
 		const map = mapRef.current?.getMap();
 		if (!map || !map.isStyleLoaded()) return;
 
@@ -100,10 +97,6 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
-
-		cooldownTimerRef.current = setTimeout(() => {
-			cooldownTimerRef.current = null;
-		}, 200);
 	}
 
 	useEffect(() => {
@@ -127,6 +120,7 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
 		onMoveEnd={refreshScoreRange}
+		onZoomEnd={refreshScoreRange}
 		onLoad={refreshScoreRange}
 		>
 			{sourceDefinitions.map(def => toJSX(def, sourceDefinitions))}
