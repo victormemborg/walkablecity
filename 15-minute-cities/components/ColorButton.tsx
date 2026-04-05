@@ -1,17 +1,18 @@
 "use client";
 
 import { buildLegend } from "@/utils/legend";
-import { MAX_SCORE_RANGE } from "@/utils/scoreColor";
+import type { ScoreRange } from "@/types/mapTypes";
 import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 
 type ColorButtonProps = {
 	colorBlindMode: boolean;
+  currentRange: ScoreRange | null;
 	onToggle: () => void;
 };
 
-export default function ColorButton({ colorBlindMode, onToggle }: ColorButtonProps) {
-  const legend = buildLegend(MAX_SCORE_RANGE, colorBlindMode);
+export default function ColorButton({ colorBlindMode, currentRange, onToggle }: ColorButtonProps) {
+  const legend = buildLegend(currentRange ? currentRange : { min: NaN, max: NaN }, colorBlindMode);
 
   return (
     <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>

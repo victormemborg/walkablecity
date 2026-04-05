@@ -5,19 +5,22 @@ import AccessibilityMap from "@/components/AccessibilityMap";
 import ColorButton from "@/components/ColorButton";
 import { Suspense, useState } from "react";
 import { parseMapView } from "@/utils/queryParams";
+import type { ScoreRange } from "@/types/mapTypes";
 
 function Map() {
   const searchParams = useSearchParams();
 	const [colorBlindMode, setColorBlindMode] = useState(false);
+	const [scoreRange, setScoreRange] = useState<ScoreRange | null>(null);
 	const mapView = parseMapView(searchParams);
 
 	return (
 		<>
 			<ColorButton
 				colorBlindMode={colorBlindMode}
+				currentRange={scoreRange}
 				onToggle={() => setColorBlindMode((current) => !current)}
 			/>
-			<AccessibilityMap {...mapView} colorBlindMode={colorBlindMode} />
+			<AccessibilityMap {...mapView} colorBlindMode={colorBlindMode} onScoreRangeChange={setScoreRange} />
 		</>
 	);
 }
