@@ -76,7 +76,6 @@ function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[
 }
 
 export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
-	const cooldownTimerRef = useRef<NodeJS.Timeout>(null);
 	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
 	const mapRef = useRef<MapRef>(null);
 
@@ -87,7 +86,7 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		if (!map || !map.isStyleLoaded()) return;
 
 		const sourceDef = sourceDefinitions.find(def => def.maxZoom >= map.getZoom());
-		if (!sourceDef) throw new AssertionError({ message: "Invalid zoom level" });
+		if (!sourceDef) throw new Error("Invalid zoom level");
 
 		const layerId = `${sourceDef.id}-layer`;
 		const scores = map.queryRenderedFeatures(undefined, { layers: [layerId]})
@@ -101,10 +100,6 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 
 		const property = `${sourceDef.style.type}-color`;
 		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
-
-		cooldownTimerRef.current = setTimeout(() => {
-			cooldownTimerRef.current = null;
-		}, 200);
 	}
 
 	useEffect(() => {
@@ -127,7 +122,6 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
-		onMove={refreshScoreRange}
 		onMoveEnd={refreshScoreRange}
 		onLoad={refreshScoreRange}
 		>

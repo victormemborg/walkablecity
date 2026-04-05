@@ -31,6 +31,17 @@ function clampMinSpread(
 }
 
 /**
+ * Config for the color palette used to show accessibility scores on the map. Provides both a default and a color blind friendly palette.
+ * @param colorBlindMode false for default mode, true for color blind mode
+ * @returns An array of color strings representing the color palette to use for the map visualization.
+ */
+export function getColorPalette(colorBlindMode: boolean) {
+    return colorBlindMode
+    ? ["#D55E00", "#E69F00", "#56B4E9", "#009E73"]
+    : ["#d73027", "#fc8d59", "#fee08b", "#1a9850"];
+}
+
+/**
  * Generates a MapLibre expression for interpolating colors based on score values.
  *
  * See: https://maplibre.org/maplibre-style-spec/expressions/
@@ -43,9 +54,10 @@ function colorInterpolate(currentRange: ScoreRange): ExpressionSpecification {
     return [
         "interpolate", ["linear"],
         ["get", "score"],
-        min, "#d73027",
-        (min + max) / 2, "#f3f37d",
-        max, "#1a9850"
+        min, palette[0],
+        min + (max - min) * 0.33, palette[1],
+        min + (max - min) * 0.66, palette[2],
+        max, palette[3]
     ] as ExpressionSpecification;
 }
 
@@ -65,10 +77,10 @@ function colorInterpolateColorBlind(currentRange: ScoreRange): ExpressionSpecifi
     return [
         "interpolate", ["linear"],
         ["get", "score"],
-        min, "#D55E00",
-        min + (max - min) * 0.33, "#E69F00",
-        min + (max - min) * 0.66, "#56B4E9",
-        max, "#009E73"
+        min, palette[0],
+        min + (max - min) * 0.33, palette[1],
+        min + (max - min) * 0.66, palette[2],
+        max, palette[3]
     ] as ExpressionSpecification;
 }
 
