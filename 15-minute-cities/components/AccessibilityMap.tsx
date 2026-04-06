@@ -96,13 +96,13 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 
 		const lowIdx = Math.floor(scores.length * 0.05);
 		const highIdx = Math.floor(scores.length * 0.95);
-		const range = {min: scores[lowIdx], max: scores[highIdx]};
+		const roundedRange = {min: scores[lowIdx], max: scores[highIdx]};
 		const absolutRange = {min: scores[0], max: scores[scores.length - 1]};
 
 		onScoreRangeChange(absolutRange);
 
 		const property = `${sourceDef.style.type}-color`;
-		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
+		map.setPaintProperty(layerId, property, getColorExpression(roundedRange, colorBlindMode));
 
 		cooldownTimerRef.current = setTimeout(() => {
 			cooldownTimerRef.current = null;
