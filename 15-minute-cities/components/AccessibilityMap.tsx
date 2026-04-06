@@ -1,7 +1,7 @@
 "use client";
 
 import Map, { Layer, MapRef, Source } from "react-map-gl/maplibre";
-import type { VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
+import type { VectorSourceSpecification, LayerSpecification, MapDataEvent } from 'maplibre-gl';
 import { useEffect, useRef } from "react";
 import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
 import type { MapView, ScoreRange } from "../types/mapTypes";
@@ -38,7 +38,7 @@ function getSourceDefinitions(colorBlindMode: boolean): SourceDefinition[] {
 	const edgeStyle = getEdgeStyle(colorBlindMode);
 	return [
 		{id: "interpolated_grids_pmtiles_p5", maxZoom: 9, style: gridStyle},
-		{id: "interpolated_grids_pmtiles_p6", maxZoom: 13, style: gridStyle},
+		{id: "interpolated_grids_pmtiles_p6", maxZoom: 14, style: gridStyle},
 		//{id: "interpolated_grids_pmtiles_p7", maxZoom: 15, style: gridStyle},
 		{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: edgeStyle}
 	];
@@ -110,11 +110,11 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 		}
 
 		const unsubsribeAndRefresh = () => {
-			map?.off("data", unsubsribeAndRefresh);
+			map?.off("idle", unsubsribeAndRefresh);
 			refreshScoreRange();
 		}
 
-		map?.on("data", unsubsribeAndRefresh);
+		map?.on("idle", unsubsribeAndRefresh);
 	}
 
 	useEffect(guardedRefresh, [colorBlindMode]);
