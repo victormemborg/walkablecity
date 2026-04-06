@@ -80,7 +80,7 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 
 	const refreshScoreRange = () => {
 		const map = mapRef.current?.getMap();
-		if (!map || !map.isStyleLoaded()) return;
+		if (!map) return;
 
 		const sourceDef = sourceDefinitions.find(def => def.maxZoom >= map.getZoom());
 		if (!sourceDef) throw new Error("Invalid zoom level");
@@ -104,13 +104,14 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 
 	useEffect(() => {
 		const map = mapRef.current;
+
 		const unsubsribeAndRefresh = () => {
-			map?.off("idle", unsubsribeAndRefresh);
+			map?.off("styledata", unsubsribeAndRefresh);
 			refreshScoreRange();
 		}
 
-		map?.on("idle", unsubsribeAndRefresh);
-	}, [colorBlindMode])
+		map?.on("styledata", unsubsribeAndRefresh);
+	}, [colorBlindMode]);
 
 	return (
 		<Map
@@ -123,7 +124,6 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
 		onMoveEnd={refreshScoreRange}
-		onZoomEnd={refreshScoreRange}
 		onLoad={refreshScoreRange}
 		>
 			{sourceDefinitions.map(def => toJSX(def, sourceDefinitions))}
