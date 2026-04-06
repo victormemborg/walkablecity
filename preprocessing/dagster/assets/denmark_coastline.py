@@ -8,8 +8,17 @@ from shapely.geometry.base import BaseGeometry
 from shapely.ops import polygonize
 from models.models import FileRef
 from osmium import filter, osm, geom
+from collections import deque
 
 point = tuple[float, float]
+
+def getStart(ls: LineString):
+    (xs, ys) = ls.coords.xy
+    return xs[0], ys[0]
+
+def getEnd(ls: LineString):
+    (xs, ys) = ls.coords.xy
+    return xs[len(xs)-1], ys[len(ys)-1]
 
 @dg.asset(kinds={"python"})
 def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> list[BaseGeometry]:
@@ -23,9 +32,8 @@ def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -
     
     fab = geom.WKTFactory()
 
-    ends: dict[point, tuple[list[LineString], point]] = {} # current endpoint -> lines, current start
-    starts: dict[point, tuple[list[LineString], point]] = {} # current start -> lines, current end
-
+    starts: dict[point, deque[LineString]] = {} # current start -> lines, current end
+    ends: dict[point, deque[LineString]] = {} # current endpoint -> lines, current start
 
     way_count = 0
     for way in fp:
@@ -34,26 +42,27 @@ def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -
         way = cast (osm.Way, way)
         line = cast(LineString, wkt.loads(fab.create_linestring(way)))
 
-        (xs, ys) = line.coords.xy
-        line_start = xs[0], ys[0]
-        line_end = xs[len(xs)-1], ys[len(ys)-1]
+        line_start = getStart(line)
+        line_end = getEnd(line)
 
-        (acc1, start) = ends.pop(line_start, ([], line_start))
-        acc1.append(line)
+        chain1 = ends.pop(line_start, deque([]))
+        chain1.append(line)
 
-        (acc2, end) = starts.pop(line_end, ([], line_end))
-        acc1.extend(starts.pop(line_end, []))
+        chain2 = starts.pop(line_end, None)
+        if chain2 is None:
+            ends[line_end] = chain1
+            starts[line_start] = chain1
+            continue
+        
+        chain1.extend(chain2)
+        ends[getEnd(chain2.pop())] = chain1
+        starts[getStart(chain1.popleft())] = chain1
 
-        ends[line_end] = acc1.copy()
-        starts[line_start] = acc1.copy()
-
-#    coastlines: list[BaseGeometry] = []
-#    for lines in ends.values():
-#        print()
-#        coastline = shapely.union_all(lines)
-#        coastlines.append(coastline)
-#
-    coastlines = list(*ends.values())
+    coastlines: list[BaseGeometry] = []
+    for lines in ends.values():
+        print()
+        coastline = shapely.union_all(lines)
+        coastlines.append(coastline)
 
     context.log.info(f"ways found: {way_count}")
     context.log.info(f"coastlines found: {len(coastlines)}")
