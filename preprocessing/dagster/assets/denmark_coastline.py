@@ -54,9 +54,12 @@ def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -
             starts[line_start] = chain1
             continue
         
+        if chain1 is chain2:
+            continue
+
         chain1.extend(chain2)
         ends[getEnd(chain2.pop())] = chain1
-        starts[getStart(chain1.popleft())] = chain1
+        starts[getStart(chain1[0])] = chain1
 
     coastlines: list[BaseGeometry] = []
     for lines in ends.values():
