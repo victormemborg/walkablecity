@@ -3,9 +3,11 @@
 import { useSearchParams } from "next/navigation";
 import AccessibilityMap from "@/components/AccessibilityMap";
 import ColorButton from "@/components/ColorButton";
+import LegendCard from "@/components/LegendCard";
 import { Suspense, useState } from "react";
 import { parseMapView } from "@/utils/queryParams";
 import type { ScoreRange } from "@/types/mapTypes";
+import { Box, Stack } from "@mui/material";
 
 function Map() {
   const searchParams = useSearchParams();
@@ -15,11 +17,12 @@ function Map() {
 
 	return (
 		<>
-			<ColorButton
-				colorBlindMode={colorBlindMode}
-				currentRange={scoreRange}
-				onToggle={() => setColorBlindMode((current) => !current)}
-			/>
+			<Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+				<Stack spacing={1.5}>
+					<LegendCard colorBlindMode={colorBlindMode} currentRange={scoreRange} />
+					<ColorButton colorBlindMode={colorBlindMode} onToggle={() => setColorBlindMode((current) => !current)} />
+				</Stack>
+			</Box>
 			<AccessibilityMap {...mapView} colorBlindMode={colorBlindMode} onScoreRangeChange={setScoreRange} />
 		</>
 	);
