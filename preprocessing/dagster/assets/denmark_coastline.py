@@ -55,6 +55,8 @@ def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -
             continue
         
         if chain1 is chain2:
+            ends[line_end] = chain1
+            starts[line_start] = chain1
             continue
 
         chain1.extend(chain2)
@@ -63,7 +65,6 @@ def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -
 
     coastlines: list[BaseGeometry] = []
     for lines in ends.values():
-        print()
         coastline = shapely.union_all(lines)
         coastlines.append(coastline)
 
