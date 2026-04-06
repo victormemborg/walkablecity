@@ -6,7 +6,7 @@ import type { ExpressionSpecification } from "maplibre-gl";
 // 'scored_nodes' asset to find upper bound. TODO: A 
 // more robust way of syncing these values would be nice.
 export const MAX_SCORE_RANGE: ScoreRange = { min: 0, max: 46000 }; // 45899 + 101 buffer
-const MIN_SPREAD_FRACTION: number = 0.1;
+const MIN_SPREAD_FRACTION: number = 0.15;
 
 /**
  * Clamps spread of {@link range} to some minimum {@link fraction} of {@link within}s spread.
