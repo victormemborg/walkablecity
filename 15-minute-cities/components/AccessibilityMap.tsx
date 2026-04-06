@@ -102,16 +102,22 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 		map.setPaintProperty(layerId, property, getColorExpression(roundedRange, colorBlindMode));
 	}
 
-	useEffect(() => {
+	const guardedRefresh = () => {
 		const map = mapRef.current;
+		if (map?.isStyleLoaded()) {
+			refreshScoreRange();
+			return;
+		}
 
 		const unsubsribeAndRefresh = () => {
-			map?.off("styledata", unsubsribeAndRefresh);
+			map?.off("sourcedata", unsubsribeAndRefresh);
 			refreshScoreRange();
 		}
 
-		map?.on("styledata", unsubsribeAndRefresh);
-	}, [colorBlindMode]);
+		map?.on("sourcedata", unsubsribeAndRefresh);
+	}
+
+	useEffect(guardedRefresh, [colorBlindMode]);
 
 	return (
 		<Map
@@ -123,8 +129,8 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 		}}
 		mapStyle="https://tiles.openfreemap.org/styles/positron"
 		maxZoom={18}
-		onMoveEnd={refreshScoreRange}
-		onLoad={refreshScoreRange}
+		onMoveEnd={guardedRefresh}
+		onLoad={guardedRefresh}
 		>
 			{sourceDefinitions.map(def => toJSX(def, sourceDefinitions))}
 		</Map>
