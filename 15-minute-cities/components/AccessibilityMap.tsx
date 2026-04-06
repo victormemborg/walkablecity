@@ -38,8 +38,8 @@ function getSourceDefinitions(colorBlindMode: boolean): SourceDefinition[] {
 	const edgeStyle = getEdgeStyle(colorBlindMode);
 	return [
 		{id: "interpolated_grids_pmtiles_p5", maxZoom: 9, style: gridStyle},
-		{id: "interpolated_grids_pmtiles_p6", maxZoom: 14, style: gridStyle},
-		//{id: "interpolated_grids_pmtiles_p7", maxZoom: 15, style: gridStyle},
+		{id: "interpolated_grids_pmtiles_p6", maxZoom: 12, style: gridStyle},
+		{id: "interpolated_grids_pmtiles_p7", maxZoom: 14, style: gridStyle},
 		{id: "scored_edges_pmtiles_p0", maxZoom: 18, style: edgeStyle}
 	];
 }
@@ -91,8 +91,8 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 			.sort((a, b) => a - b);
 		if (scores.length <= 0) return;
 
-		const lowIdx = Math.floor(scores.length * 0.05);
-		const highIdx = Math.floor(scores.length * 0.95);
+		const lowIdx = Math.floor(scores.length * 0.025);
+		const highIdx = Math.floor(scores.length * 0.975);
 		const roundedRange = {min: scores[lowIdx], max: scores[highIdx]};
 		const absolutRange = {min: scores[0], max: scores[scores.length - 1]};
 
