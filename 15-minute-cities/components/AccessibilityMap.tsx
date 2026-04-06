@@ -4,7 +4,7 @@ import Map, { Layer, MapRef, Source } from "react-map-gl/maplibre";
 import type { VectorSourceSpecification, LayerSpecification } from 'maplibre-gl';
 import { useEffect, useRef } from "react";
 import { getColorExpression, MAX_SCORE_RANGE } from "../utils/scoreColor";
-import type { MapView } from "../types/mapTypes";
+import type { MapView, ScoreRange } from "../types/mapTypes";
 
 type SourceDefinition = {
 	id: string;
@@ -74,7 +74,7 @@ function toJSX(sourceDef: SourceDefinition, sourceDefinitions: SourceDefinition[
 	);
 }
 
-export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView & {colorBlindMode: boolean}) {
+export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreRangeChange}: MapView & {colorBlindMode: boolean; onScoreRangeChange: (range: ScoreRange) => void}) {
 	const sourceDefinitions = getSourceDefinitions(colorBlindMode);
 	const mapRef = useRef<MapRef>(null);
 
@@ -93,10 +93,13 @@ export default function AccessibilityMap({center, zoom, colorBlindMode}: MapView
 
 		const lowIdx = Math.floor(scores.length * 0.05);
 		const highIdx = Math.floor(scores.length * 0.95);
-		const range = {min: scores[lowIdx], max: scores[highIdx]};
+		const roundedRange = {min: scores[lowIdx], max: scores[highIdx]};
+		const absolutRange = {min: scores[0], max: scores[scores.length - 1]};
+
+		onScoreRangeChange(absolutRange);
 
 		const property = `${sourceDef.style.type}-color`;
-		map.setPaintProperty(layerId, property, getColorExpression(range, colorBlindMode));
+		map.setPaintProperty(layerId, property, getColorExpression(roundedRange, colorBlindMode));
 	}
 
 	useEffect(() => {

@@ -17,20 +17,24 @@ type LegendEntry = {
  * @returns a legendentry array with the color, label, and upper/lower bounds for each step in the legend.
  */
 export function buildLegend(currentRange: ScoreRange, colorBlindMode: boolean): LegendEntry[] {
-  const palette = getColorPalette(colorBlindMode);
-  const stepSize = (currentRange.max - currentRange.min) / palette.length;
+  const palette = [...getColorPalette(colorBlindMode)].reverse(); // i could change getColorPalette, but other things depend on the order, so this is a bit anticlimatic but it works
+  const range = currentRange.max - currentRange.min;
+  const stepSize = range / palette.length;
 
   return palette.map((color, index) => {
-    const upperBound = currentRange.max - stepSize * index;
-    const lowerBound = index < palette.length - 1
-      ? currentRange.max - stepSize * (index + 1)
-      : currentRange.max;
+    const lowerBound = stepSize * index;
+    const upperBound = index < palette.length - 1
+      ? stepSize * (index + 1)
+      : range;
+
+    const roundedLower = Math.round(lowerBound);
+    const roundedUpper = Math.round(upperBound);
 
     let label: string;
-    if (index === 0) {
-        label = `> ${lowerBound} m`;
+    if (index === palette.length - 1) {
+        label = `> ${roundedLower} m`;
     } else {
-        label = `${lowerBound} - ${upperBound} m`;
+        label = `${roundedLower} - ${roundedUpper} m`;
     }
 
     return { color, label, upperBound, lowerBound };
