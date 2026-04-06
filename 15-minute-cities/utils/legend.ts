@@ -19,7 +19,6 @@ type LegendEntry = {
 export function buildLegend(currentRange: ScoreRange, colorBlindMode: boolean): LegendEntry[] {
   const palette = [...getColorPalette(colorBlindMode)].reverse(); // i could change getColorPalette, but other things depend on the order, so this is a bit anticlimatic but it works
   const range = currentRange.max - currentRange.min;
-  console.log(currentRange);
   const stepSize = range / palette.length;
 
   return palette.map((color, index) => {
