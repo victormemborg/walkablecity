@@ -110,11 +110,11 @@ export default function AccessibilityMap({center, zoom, colorBlindMode, onScoreR
 		}
 
 		const unsubsribeAndRefresh = () => {
-			map?.off("sourcedata", unsubsribeAndRefresh);
+			map?.off("data", unsubsribeAndRefresh);
 			refreshScoreRange();
 		}
 
-		map?.on("sourcedata", unsubsribeAndRefresh);
+		map?.on("data", unsubsribeAndRefresh);
 	}
 
 	useEffect(guardedRefresh, [colorBlindMode]);
