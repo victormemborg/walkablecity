@@ -1,62 +1,38 @@
 import osmium
-import shapely
 import dagster as dg
 
 from typing import cast
-from shapely import wkt, LineString
+from shapely import wkt
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import polygonize
 from models.models import FileRef
 from osmium import filter, osm, geom
 
-point = tuple[float, float]
-
-def getStart(ls: LineString):
-    (xs, ys) = ls.coords.xy
-    return xs[0], ys[0]
-
-def getEnd(ls: LineString):
-    (xs, ys) = ls.coords.xy
-    return xs[len(xs)-1], ys[len(ys)-1]
 
 @dg.asset(kinds={"python"})
-def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> list[BaseGeometry]:
+async def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> list[BaseGeometry]:
     """Create a list of all distinct landmasses in Denmark"""
 
     file = denmark_raw.path
     fp = osmium.FileProcessor(file) \
         .with_locations() \
         .with_filter(filter.EntityFilter(osm.WAY)) \
-        .with_filter(filter.TagFilter(("natural", "coastline")))
+        .with_filter(filter.TagFilter(("natural", "coastline"), ("boundary", "administrative")))
     
     fab = geom.WKTFactory()
-    starts: dict[point, list[LineString]] = {} # start -> line chain
-    ends: dict[point, list[LineString]] = {} # end -> line chain
+    lines: list[BaseGeometry] = []
 
+    #1065
     for way in fp:
-        way = cast (osm.Way, way)
-        line = cast(LineString, wkt.loads(fab.create_linestring(way)))
+        way = cast(osm.Way, way)
 
-        line_start = getStart(line)
-        line_end = getEnd(line)
-
-        chain_end = ends.pop(line_start, [])
-        chain_end.append(line)
-
-        chain_start = starts.pop(line_end, None)
-        if chain_start is None or chain_end is chain_start:
-            ends[line_end] = chain_end
-            starts[line_start] = chain_end
+        tags = way.tags
+        if tags.get("boundary") and not tags.get("admin_level") == "2":
             continue
 
-        chain_end.extend(chain_start)
-        ends[getEnd(chain_start.pop())] = chain_end
-        starts[getStart(chain_end[0])] = chain_end
+        lines.append(wkt.loads(fab.create_linestring(cast(osm.Way, way))) )
 
-    coastlines: list[BaseGeometry] = []
-    for lines in ends.values():
-        coastline = shapely.union_all(lines)
-        coastlines.append(coastline)
+    polygons: list[BaseGeometry] = list(polygonize(lines))
 
-    context.log.info(f"coastlines found: {len(coastlines)}")
-    return coastlines
+    context.log.info(f"coastlines found: {len(polygons)}")
+    return polygons
