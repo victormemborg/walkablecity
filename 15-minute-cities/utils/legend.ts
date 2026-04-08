@@ -8,6 +8,16 @@ type LegendEntry = {
   lowerBound: number;
 }
 
+function roundToNearest(value: number): number {
+  if (value < 100) {
+    return Math.floor(value / 10) * 10;
+  } else if (value < 1000) {
+    return Math.floor(value / 100) * 100;
+  } else {
+    return Math.floor(value / 1000) * 1000;
+  }
+}
+
 /**
  * Builds steps for the legend based on the scoring range and the color palette (amount of steps is determined by the length of the color palette). 
  * Each step includes a color, a label describing the score range it represents, and the upper and lower bounds of that range.
@@ -27,14 +37,11 @@ export function buildLegend(currentRange: ScoreRange, colorBlindMode: boolean): 
       ? stepSize * (index + 1)
       : range;
 
-    const roundedLower = Math.round(lowerBound);
-    const roundedUpper = Math.round(upperBound);
-
     let label: string;
     if (index === palette.length - 1) {
-        label = `> ${roundedLower} m`;
+        label = `> ${roundToNearest(lowerBound)} m`;
     } else {
-        label = `${roundedLower} - ${roundedUpper} m`;
+        label = `${roundToNearest(lowerBound)} - ${roundToNearest(upperBound)} m`;
     }
 
     return { color, label, upperBound, lowerBound };
