@@ -47,16 +47,30 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
     context.log.info(f"Computing geohash precision {level} / {max(PRECISION_LEVELS)} ...")
 
     bounds = landmasses.bounds.iloc[0,:]
-    hashes_witihin_bounds = pgh.geohashes_in_box(bbox=pgh.BoundingBox(*bounds), precision=level)
+    bbox = pgh.BoundingBox(min_lat=bounds["miny"], min_lon=bounds["minx"], max_lat=bounds["maxy"], max_lon=bounds["maxx"])
+    hashes_witihin_bounds = pgh.geohashes_in_box(bbox=bbox, precision=level)
 
     all_grids = [box_hash(hash) for hash in hashes_witihin_bounds]
+    context.log.info(f"len all_grids: {len(all_grids)}")
     all_grids_gdf = gpd.GeoDataFrame(geometry=all_grids, crs=4326)
     grids_on_land = all_grids_gdf.sjoin(df=landmasses, how="inner", predicate="intersects")
+    context.log.info(grids_on_land.columns)
+    context.log.info(grids_on_land.head())
+    context.log.info(grids_on_land.describe())
     grids_on_land = grids_on_land[all_grids_gdf.columns] # remove any 'landmasses' columns
+    non_scored = grids_on_land.overlay(right=scored_grids, how="difference")
 
-    nearest_scored = grids_on_land.sjoin_nearest(right=scored_grids, how="inner")
-    nearest_scored["dist"] = nearest_scored.distance(cast(gpd.GeoSeries, nearest_scored["geometry_right"]))
-    nearest_scored["score"] = nearest_scored[nearest_scored["score"] - nearest_scored["dist"]]
+    nearest_scored = non_scored.sjoin_nearest(right=scored_grids, how="inner", distance_col="dist") \
+        .groupby("geometry") \
+        ["score"].aggregate(["max"]) \
+        .reset_index()
+    
+    nearest_scored = cast(gpd.GeoDataFrame, nearest_scored)
+    
+    context.log.info(nearest_scored.columns)
+    context.log.info(nearest_scored.head())
+    context.log.info(nearest_scored.describe())
+    nearest_scored["score"] = nearest_scored[nearest_scored["max"] - nearest_scored["dist"]]
 
     return nearest_scored[scored_grids.columns]
 
