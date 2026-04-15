@@ -51,32 +51,39 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
     hashes_witihin_bounds = pgh.geohashes_in_box(bbox=bbox, precision=level)
 
     all_grids = [box_hash(hash) for hash in hashes_witihin_bounds]
-    context.log.info(f"len all_grids: {len(all_grids)}")
     all_grids_gdf = gpd.GeoDataFrame(geometry=all_grids, crs=4326)
+    context.log.info(f"len all_grids: {len(all_grids)}")
+
     grids_on_land = all_grids_gdf.sjoin(df=landmasses, how="inner", predicate="intersects")
-    context.log.info(grids_on_land.columns)
-    context.log.info(grids_on_land.head())
-    context.log.info(grids_on_land.describe())
     grids_on_land = grids_on_land[all_grids_gdf.columns] # remove any 'landmasses' columns
     non_scored = grids_on_land.overlay(right=scored_grids, how="difference")
 
     nearest_scored = non_scored.sjoin_nearest(right=scored_grids, how="inner", distance_col="dist") \
-        .groupby("geometry") \
-        ["score"].aggregate(["max"]) \
-        .reset_index()
+        .sort_values(by="score", ascending=False) \
+        .drop_duplicates(subset="geometry")
     
-    nearest_scored = cast(gpd.GeoDataFrame, nearest_scored)
-    
-    context.log.info(nearest_scored.columns)
-    context.log.info(nearest_scored.head())
     context.log.info(nearest_scored.describe())
-    nearest_scored["score"] = nearest_scored[nearest_scored["max"] - nearest_scored["dist"]]
 
-    return nearest_scored[scored_grids.columns]
+    nearest_scored["score"] = nearest_scored["score"] - nearest_scored["dist"]
+    result = gpd.GeoDataFrame(data=nearest_scored, geometry="geometry", crs=4326)
+    context.log.info(result.head())
+    context.log.info(result.describe())
+
+    return result
 
 grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
 grids_pmtiles = geometry_to_pmtiles_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
 grids_uploaded = upload_pmtiles_prod_asset(grids_pmtiles.key, partitions_def=precision_partitions)
+
+#                 max
+# count   1203.000000
+# mean   33169.200531
+# std     8213.058506
+# min     7679.128795
+# 25%    30146.801683
+# 50%    35457.595825
+# 75%    38589.745934
+# max    44868.761543
     
