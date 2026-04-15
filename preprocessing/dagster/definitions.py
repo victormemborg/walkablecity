@@ -7,7 +7,7 @@ from assets.edges import scored_edges, edges_postgis, edges_pmtiles, edges_uploa
 from assets.grids import scored_grids, grids_postgis, grids_pmtiles, interpolated_grids, grids_uploaded
 from assets.scored_nodes import scored_nodes
 from assets.walk_network import walk_network
-from assets.denmark_coastline import denmark_coastline
+from assets.landmasses import landmasses
 
 from resources.pandana_network_io_manager import pandana_network_io_manager
 from resources.global_config import GlobalConfig
@@ -18,7 +18,7 @@ defs = dg.Definitions(
         denmark_raw, grouped_amenities, grouped_distances, scored_edges,
         scored_edges, scored_grids, scored_nodes, walk_network,
         edges_postgis, edges_pmtiles, grids_postgis, grids_pmtiles, 
-        edges_uploaded, grids_uploaded, interpolated_grids, denmark_coastline
+        edges_uploaded, grids_uploaded, interpolated_grids, landmasses
     ],
     resources={
         "pandana_io_manager": pandana_network_io_manager,

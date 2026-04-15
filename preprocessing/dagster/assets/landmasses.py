@@ -11,8 +11,8 @@ from osmium import filter, osm, geom
 
 
 @dg.asset(kinds={"python"})
-def denmark_coastline(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> gpd.GeoDataFrame:
-    """Create a list of all distinct landmasses in Denmark"""
+def landmasses(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> gpd.GeoDataFrame:
+    """Create GeoDataFrame of all distinct landmasses in Denmark"""
 
     file = denmark_raw.path
     fp = osmium.FileProcessor(file) \
