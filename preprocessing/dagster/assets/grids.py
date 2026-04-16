@@ -56,7 +56,6 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
 
     grids_on_land = all_grids_gdf.sjoin(df=landmasses, how="inner", predicate="intersects")
     grids_on_land = grids_on_land.drop_duplicates(subset="geometry")
-    grids_on_land = grids_on_land[all_grids_gdf.columns] # remove any 'landmasses' columns
 
     non_scored_grids = grids_on_land.overlay(right=scored_grids, how="difference")
     non_scored_projected = non_scored_grids.to_crs(3857)
@@ -66,14 +65,14 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
         .groupby(level=0) \
         [["score", "dist"]].mean()
 
-    context.log.info(scored_grids.describe()) 
+    nearest_scored = nearest_scored.join(non_scored_grids.geometry)
+    nearest_scored = gpd.GeoDataFrame(nearest_scored, geometry="geometry", crs=4326)
     context.log.info(nearest_scored.describe())
 
-    nearest_scored["score"] = nearest_scored["score"] - nearest_scored["dist"]
-    result = gpd.GeoDataFrame(data=nearest_scored, geometry="geometry", crs=4326)
-    context.log.info(result.describe())
+    nearest_scored["score"] = (nearest_scored["score"] - nearest_scored["dist"]).clip(lower=0)
+    context.log.info(nearest_scored.describe())
 
-    return result
+    return nearest_scored
 
 grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
