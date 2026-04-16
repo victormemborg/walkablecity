@@ -46,8 +46,8 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
     level = int(context.partition_key)
     context.log.info(f"Computing geohash precision {level} / {max(PRECISION_LEVELS)} ...")
 
-    bounds = landmasses.bounds.iloc[0,:]
-    bbox = pgh.BoundingBox(min_lat=bounds["miny"], min_lon=bounds["minx"], max_lat=bounds["maxy"], max_lon=bounds["maxx"])
+    (minx, miny, maxx, maxy) = landmasses.total_bounds
+    bbox = pgh.BoundingBox(min_lat=miny, min_lon=minx, max_lat=maxy, max_lon=maxx)
     hashes_witihin_bounds = pgh.geohashes_in_box(bbox=bbox, precision=level)
 
     all_grids = [box_hash(hash) for hash in hashes_witihin_bounds]
@@ -55,18 +55,22 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
     context.log.info(f"len all_grids: {len(all_grids)}")
 
     grids_on_land = all_grids_gdf.sjoin(df=landmasses, how="inner", predicate="intersects")
+    grids_on_land = grids_on_land.drop_duplicates(subset="geometry")
     grids_on_land = grids_on_land[all_grids_gdf.columns] # remove any 'landmasses' columns
-    non_scored = grids_on_land.overlay(right=scored_grids, how="difference")
 
-    nearest_scored = non_scored.sjoin_nearest(right=scored_grids, how="inner", distance_col="dist") \
-        .sort_values(by="score", ascending=False) \
-        .drop_duplicates(subset="geometry")
-    
+    non_scored_grids = grids_on_land.overlay(right=scored_grids, how="difference")
+    non_scored_projected = non_scored_grids.to_crs(3857)
+    scored_projected = scored_grids.to_crs(3857)
+
+    nearest_scored = non_scored_projected.sjoin_nearest(right=scored_projected, how="inner", distance_col="dist") \
+        .groupby(level=0) \
+        [["score", "dist"]].mean()
+
+    context.log.info(scored_grids.describe()) 
     context.log.info(nearest_scored.describe())
 
     nearest_scored["score"] = nearest_scored["score"] - nearest_scored["dist"]
     result = gpd.GeoDataFrame(data=nearest_scored, geometry="geometry", crs=4326)
-    context.log.info(result.head())
     context.log.info(result.describe())
 
     return result
