@@ -86,13 +86,3 @@ grids_pmtiles = geometry_to_pmtiles_asset(interpolated_grids.key, partitions_def
 
 grids_uploaded = upload_pmtiles_prod_asset(grids_pmtiles.key, partitions_def=precision_partitions)
 
-#                 max
-# count   1203.000000
-# mean   33169.200531
-# std     8213.058506
-# min     7679.128795
-# 25%    30146.801683
-# 50%    35457.595825
-# 75%    38589.745934
-# max    44868.761543
-    
