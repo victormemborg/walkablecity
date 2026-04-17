@@ -37,51 +37,52 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) 
     grouped["geometry"] = grouped["hash"].map(box_hash)
 
     final = grouped[["geometry", "score"]]
-    return gpd.GeoDataFrame(final, geometry="geometry", crs=4326)
+    return gpd.GeoDataFrame(data=final, geometry="geometry", crs=4326)
 
 @dg.asset(kinds={"python"}, partitions_def=precision_partitions)
-def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """If any non-scored grid cell has 8 neighboring scored cells, assume score to be average of neighbors"""
+def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame, landmasses: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Let grid cells with no score have score: nearest_scored.score - dist_to(nearest_scored)"""
 
     level = int(context.partition_key)
     context.log.info(f"Computing geohash precision {level} / {max(PRECISION_LEVELS)} ...")
 
-    already_scored: set[BaseGeometry] = set(scored_grids.geometry)
-    eligable_grids: set[BaseGeometry] = set() # Grids to be considered for interpolation
+    (minx, miny, maxx, maxy) = landmasses.total_bounds
+    bbox = pgh.BoundingBox(min_lat=miny, min_lon=minx, max_lat=maxy, max_lon=maxx)
+    hashes_witihin_bounds = pgh.geohashes_in_box(bbox=bbox, precision=level)
 
-    for scored_grid in scored_grids.geometry:
-        scored_hash = pgh.encode(latitude=scored_grid.centroid.y, longitude=scored_grid.centroid.x, precision=level)
-        directions: list[pgh.Direction] = ["left", "right", "top", "bottom"]
+    all_grids = [box_hash(hash) for hash in hashes_witihin_bounds]
+    all_grids_gdf = gpd.GeoDataFrame(geometry=all_grids, crs=4326)
+    context.log.info(f"len all_grids: {len(all_grids)}")
 
-        for direction in directions:
-            adjacent_hash = pgh.get_adjacent(scored_hash, direction)
-            adjacent_grid = box_hash(adjacent_hash)
+    grids_on_land = all_grids_gdf.sjoin(df=landmasses, how="inner", predicate="intersects")
+    grids_on_land = grids_on_land.drop_duplicates(subset="geometry")
+    grids_on_land = grids_on_land[all_grids_gdf.columns] # Remove 'landmasses' columns
+    context.log.info(f"len grids_on_land: {len(grids_on_land.index)}")
 
-            if not adjacent_grid in already_scored:
-                eligable_grids.add(adjacent_grid)
+    non_scored_grids = grids_on_land.overlay(right=scored_grids, how="difference")
+    non_scored_projected = non_scored_grids.to_crs(3857)
+    scored_projected = scored_grids.to_crs(3857)
 
-    eligable = gpd.GeoDataFrame(geometry=list(eligable_grids), crs=scored_grids.crs)
-    aggregated = eligable.sjoin(df=scored_grids, how="left", predicate="touches") \
-        .groupby("geometry") \
-        ["score"].aggregate(["mean", "count"]) \
-        .rename(columns={"mean": "score", "count": "neighbor_count"}) \
-    
-    interpolated = aggregated[aggregated["neighbor_count"] == 8] \
-        .drop(columns="neighbor_count") \
-        .reset_index()
+    interpolated = non_scored_projected.sjoin_nearest(right=scored_projected, how="inner", distance_col="dist") \
+        .groupby(level=0) \
+        [["score", "dist"]].mean()
 
-    with pd.option_context('display.max_colwidth', None):
-        context.log.info(interpolated.head())
-        context.log.info(interpolated.describe())
+    interpolated = interpolated.join(non_scored_grids.geometry)
+    interpolated["score"] = (interpolated["score"] - interpolated["dist"]).clip(lower=0)
+    context.log.info(interpolated.describe())
 
-    combined = pd.concat([scored_grids, interpolated], ignore_index=True)
-    context.log.info(f"# of grids\nbefore: {len(scored_grids.index)}\nafter: {len(combined.index)}")
+    columns = ["geometry", "score"]
+    merged = gpd.GeoDataFrame(
+        data=pd.concat([interpolated[columns], scored_grids[columns]], ignore_index=True),
+        geometry="geometry",
+        crs=4326
+    )
 
-    return cast(gpd.GeoDataFrame, combined)
+    return merged
 
 grids_postgis = geometry_to_postgis_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
 grids_pmtiles = geometry_to_pmtiles_asset(interpolated_grids.key, partitions_def=precision_partitions)
 
 grids_uploaded = upload_pmtiles_prod_asset(grids_pmtiles.key, partitions_def=precision_partitions)
-    
+
