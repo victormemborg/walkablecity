@@ -3,9 +3,7 @@ import pandas as pd
 import pygeohash as pgh
 import geopandas as gpd
 
-from typing import cast
 from shapely.geometry import box
-from shapely.geometry.base import BaseGeometry
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
 from assets.factories.upload_pmtiles_prod_asset import upload_pmtiles_prod_asset
