@@ -4,7 +4,7 @@ import pygeohash as pgh
 import geopandas as gpd
 
 from shapely.strtree import STRtree
-from shapely.geometry import box, Polygon
+from shapely.geometry import box
 from assets.factories.geometry_to_postgis_asset import geometry_to_postgis_asset
 from assets.factories.geometry_to_pmtiles_asset import geometry_to_pmtiles_asset
 from assets.factories.upload_pmtiles_prod_asset import upload_pmtiles_prod_asset
@@ -68,19 +68,21 @@ def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoD
         fully_contained = len(tree.query(cell, predicate="within")) > 0
         if fully_contained:
             children = deque(get_children(hash))
+
             while children:
                 child = children.popleft()
 
                 if len(child) == level:
                     hashes_on_land.add(child)
                     continue
-                
+
                 children.extend(get_children(child))
+
             continue
 
         hashes.extend(get_children(hash))
-    context.log.info(f"len grids_on_land: {len(hashes_on_land)}")
 
+    context.log.info(f"len grids_on_land: {len(hashes_on_land)}")
     non_scored = [box_hash(hash) for hash in hashes_on_land.difference(scored_grids["hash"])]
     non_scored_gdf = gpd.GeoDataFrame(geometry=non_scored, crs=4326)
     context.log.info(f"non_scored_gdf:\n{non_scored_gdf.describe()}")
