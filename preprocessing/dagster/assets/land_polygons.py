@@ -14,14 +14,14 @@ from shapely.ops import polygonize
 from models.models import FileRef
 from osmium import filter, osm, geom
 
+
 URL = "https://osmdata.openstreetmap.de/download/land-polygons-split-4326.zip"
-TARGET_FILE = "land_polygons.shp"
+TARGET_FILE = os.path.join("land-polygons-split-4326", "land_polygons.shp")
 
 @dg.asset(kinds={"python"})
 async def land_polygons(context: dg.AssetExecutionContext) -> FileRef:
-    """Download shapefile containing polygons for all coastlines worldwide"""
-
-    out_path = os.path.join(context.instance.storage_directory(), TARGET_FILE)
+    """Download and extract the worldwide coastline shapefile archive."""
+    out_dir = context.instance.storage_directory()
 
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=True) as tmp:
         context.log.info(f"Downloading {URL} to temp file {tmp.name} ...")
@@ -35,11 +35,10 @@ async def land_polygons(context: dg.AssetExecutionContext) -> FileRef:
 
         with zipfile.ZipFile(tmp.name) as zf:
             context.log.info(f"Zip contents: {zf.namelist()}")
-            with zf.open(f"land-polygons-split-4326/{TARGET_FILE}") as src, open(out_path, "wb") as dst:
-                dst.write(src.read())
+            zf.extractall(out_dir)
 
-    context.log.info(f"Saved to {out_path}")
-    return FileRef(out_path)
+    # Return a reference to the shapefile witihin the extracted directory
+    return FileRef(os.path.join(out_dir, TARGET_FILE))
 
 @dg.asset(kinds={"python"})
 def land_polygons_clipped(context: dg.AssetExecutionContext, denmark_raw: FileRef, land_polygons: FileRef) -> gpd.GeoDataFrame:
