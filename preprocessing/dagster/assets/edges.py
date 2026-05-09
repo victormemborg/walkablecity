@@ -40,6 +40,7 @@ def scored_edges(context: dg.AssetExecutionContext, walk_network: pdna.Network, 
     edges = edges[["geometry", "score"]]
     edges = edges[edges["score"] > 0]
 
+    context.log.info(f"edges:\n{edges.describe()}")
     return gpd.GeoDataFrame(edges, geometry="geometry", crs=4326)
 
 edges_postgis = geometry_to_postgis_asset(scored_edges.key)

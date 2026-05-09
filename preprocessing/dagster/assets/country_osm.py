@@ -1,4 +1,3 @@
-# assets/denmark_raw.py
 import os
 import dagster as dg
 import httpx
@@ -7,11 +6,11 @@ from models.models import FileRef
 from resources.global_config import GlobalConfig
 
 @dg.asset(kinds={"python"})
-async def denmark_raw(context: dg.AssetExecutionContext, global_config: GlobalConfig) -> FileRef:
-    """Download the latest version of extract-latest.osm.pbf from Geofabrik"""
-    url = global_config.country_url
-    out_path = os.path.join(context.instance.storage_directory(), "extract-latest.osm.pbf")
+async def country_osm(context: dg.AssetExecutionContext, global_config: GlobalConfig) -> FileRef:
+    """Download a .osm.pbf country extract from a URL specified in GlobalConfig"""
 
+    url = global_config.country_url
+    out_path = os.path.join(context.instance.storage_directory(), "country-latest.osm.pbf")
     context.log.info(f"Downloading {url} ...")
 
     async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:
