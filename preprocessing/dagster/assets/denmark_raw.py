@@ -9,8 +9,7 @@ from resources.global_config import GlobalConfig
 @dg.asset(kinds={"python"})
 async def denmark_raw(context: dg.AssetExecutionContext, global_config: GlobalConfig) -> FileRef:
     """Download the latest version of extract-latest.osm.pbf from Geofabrik"""
-    country = global_config.country
-    url = global_config.country_urls[country]
+    url = global_config.country_url
     out_path = os.path.join(context.instance.storage_directory(), "extract-latest.osm.pbf")
 
     context.log.info(f"Downloading {url} ...")
