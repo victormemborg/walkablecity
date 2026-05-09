@@ -2,6 +2,7 @@
   "name": "15-minute-cities",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.26.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -31,5 +32,11 @@
     "playwright": "^1.54.2",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
