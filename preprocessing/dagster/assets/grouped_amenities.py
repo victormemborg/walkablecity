@@ -24,11 +24,12 @@ CATEGORY_MAP = {
     "museum": "culture",
 }
 
-def group(file_processor):
+def group(file_processor, context):
     """Group osm objects in FileProcessor by category. Objects returned as their centroid."""
 
     fab = geom.WKTFactory()
     grouped_points: defaultdict[str, list[Point]] = defaultdict(list)
+    malformed_cnt = 0
 
     for osm_obj in file_processor:
         seen_categories = set()
@@ -40,15 +41,19 @@ def group(file_processor):
                 continue
             seen_categories.add(category)
 
-            if osm_obj.is_node():
-                shape = wkt.loads(fab.create_point(osm_obj))
-            elif osm_obj.is_area():
-                shape = wkt.loads(fab.create_multipolygon(osm_obj))
-            else:
-                raise AssertionError(f"Unreachable: {osm_obj}")
+            try:
+                if osm_obj.is_node():
+                    shape = wkt.loads(fab.create_point(osm_obj))
+                elif osm_obj.is_area():
+                    shape = wkt.loads(fab.create_multipolygon(osm_obj))
+                else:
+                    raise AssertionError(f"Unreachable: {osm_obj}")
 
-            grouped_points[category].append(shape.centroid)
+                grouped_points[category].append(shape.centroid)
+            except: # If the geometry is invalid
+                malformed_cnt += 1
         
+    context.log.info(f"found {malformed_cnt} intances of malformed data")
     return grouped_points
 
 @dg.asset(kinds={"python"})
@@ -60,7 +65,7 @@ def grouped_amenities(context: dg.AssetExecutionContext, country_osm: FileRef) -
         .with_filter(filter.EntityFilter(osm.NODE | osm.AREA))\
         .with_filter(filter.KeyFilter("amenity", "shop", "leisure", "building"))
 
-    grouped_amenities = group(fp)
+    grouped_amenities = group(fp, context)
     for category, amenities in grouped_amenities.items():
         context.log.info(f"Found {len(amenities)} amenities for category {category}")
 
