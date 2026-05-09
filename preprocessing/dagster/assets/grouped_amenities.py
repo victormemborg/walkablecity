@@ -52,10 +52,10 @@ def group(file_processor):
     return grouped_points
 
 @dg.asset(kinds={"python"})
-def grouped_amenities(context: dg.AssetExecutionContext, denmark_raw: FileRef) -> dict[str, list[Point]]:
+def grouped_amenities(context: dg.AssetExecutionContext, country_osm: FileRef) -> dict[str, list[Point]]:
     """Group ammenities in the raw PBF data by categories"""
 
-    file = denmark_raw.path
+    file = country_osm.path
     fp = osmium.FileProcessor(file).with_areas() \
         .with_filter(filter.EntityFilter(osm.NODE | osm.AREA))\
         .with_filter(filter.KeyFilter("amenity", "shop", "leisure", "building"))

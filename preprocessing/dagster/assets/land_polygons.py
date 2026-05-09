@@ -41,13 +41,13 @@ async def land_polygons(context: dg.AssetExecutionContext) -> FileRef:
     return FileRef(os.path.join(out_dir, TARGET_FILE))
 
 @dg.asset(kinds={"python"})
-def land_polygons_clipped(context: dg.AssetExecutionContext, denmark_raw: FileRef, land_polygons: FileRef) -> gpd.GeoDataFrame:
-    """Create GeoDataFrame of all distinct landmasses in Denmark"""
+def land_polygons_clipped(context: dg.AssetExecutionContext, country_osm: FileRef, land_polygons: FileRef) -> gpd.GeoDataFrame:
+    """Create GeoDataFrame of all distinct landmasses witihin country_osm"""
 
     # Collect way IDs that belong to admin_level=2 boundary relations
     relation_way_ids: set[int] = set()
 
-    file = denmark_raw.path
+    file = country_osm.path
     fp_relations = osmium.FileProcessor(file) \
         .with_filter(filter.EntityFilter(osm.RELATION)) \
         .with_filter(filter.TagFilter(("boundary", "administrative"))) \
@@ -58,6 +58,8 @@ def land_polygons_clipped(context: dg.AssetExecutionContext, denmark_raw: FileRe
         for member in rel.members:
             if member.type == "w":  # way member
                 relation_way_ids.add(member.ref)
+
+    context.log.info(f"found {len(relation_way_ids)} ways in target relation")
 
     # Extract those ways as linestrings
     fab = geom.WKTFactory()
@@ -72,10 +74,15 @@ def land_polygons_clipped(context: dg.AssetExecutionContext, denmark_raw: FileRe
         way = cast(osm.Way, way)
         lines.append(wkt.loads(fab.create_linestring(way)))
 
+    context.log.info("finished converting ways to linestrings")
+
     # Polygonize the linestrings and clip land_polygons to their boundaries
     polygons: list[BaseGeometry] = list(polygonize(lines))
     boundaries = gpd.GeoDataFrame(geometry=polygons, crs=4326)
     landmasses = gpd.read_file(land_polygons.path)[["geometry"]] # keep only the geometry
-    clipped = gpd.clip(landmasses, boundaries)
 
-    return clipped.dissolve().explode()
+    clipped = gpd.clip(landmasses, boundaries)
+    clipped = clipped.dissolve().explode()
+
+    context.log.info(f"clipped: {clipped.describe()}")
+    return clipped
