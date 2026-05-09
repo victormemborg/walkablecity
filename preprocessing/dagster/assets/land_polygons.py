@@ -75,7 +75,7 @@ def land_polygons_clipped(context: dg.AssetExecutionContext, denmark_raw: FileRe
     # Polygonize the linestrings and clip land_polygons to their boundaries
     polygons: list[BaseGeometry] = list(polygonize(lines))
     boundaries = gpd.GeoDataFrame(geometry=polygons, crs=4326)
-    landmasses = gpd.read_file(land_polygons.path)
+    landmasses = gpd.read_file(land_polygons.path)[["geometry"]] # keep only the geometry
     clipped = gpd.clip(landmasses, boundaries)
 
     return clipped.dissolve().explode()
