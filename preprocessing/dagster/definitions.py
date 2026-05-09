@@ -23,7 +23,10 @@ defs = dg.Definitions(
     ],
     resources={
         "pandana_io_manager": pandana_network_io_manager,
-        "global_config": GlobalConfig(max_distance=100000), # 50k is (currently) enough for DK
-        "ssh": ssh_resource,
+        "global_config": GlobalConfig(
+        max_distance=100000,
+        country_url="https://download.geofabrik.de/europe/denmark-latest.osm.pbf"
+    ),
+    "ssh": ssh_resource,
     }
 )
