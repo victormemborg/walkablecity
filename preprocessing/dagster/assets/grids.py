@@ -43,13 +43,15 @@ def scored_grids(context: dg.AssetExecutionContext, scored_nodes: pd.DataFrame) 
     return gpd.GeoDataFrame(data=grouped, geometry="geometry", crs=4326)
 
 @dg.asset(kinds={"python"}, partitions_def=precision_partitions)
-def interpolated_grids(context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame, landmasses: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def interpolated_grids(
+    context: dg.AssetExecutionContext, scored_grids: gpd.GeoDataFrame, land_polygons_clipped: gpd.GeoDataFrame
+) -> gpd.GeoDataFrame:
     """Let grid cells with no score have score: nearest_scored.score - dist_to(nearest_scored)"""
 
     level = int(context.partition_key)
     context.log.info(f"Computing geohash precision {level} / {max(PRECISION_LEVELS)} ...")
 
-    tree = STRtree(landmasses.geometry)
+    tree = STRtree(land_polygons_clipped.geometry)
     hashes = deque(BASE32)
     hashes_on_land: set[str] = set()
 
